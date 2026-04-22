@@ -10,8 +10,9 @@
 - Always open a pull request before merging
   
 ### Procedure
-1. `git pull origin main` every merged PR to keep your branch up to date
-2. Create commits and modifications to a separate issue / personal branch
-3. `git pull origin main` to view any merge conflicts
-4. push to branch and submit a pull request
-5. receive one approval before merging the pull request into main
+0. check pull request and `git pull origin main`  to keep your branch up to date to the most recently merged PR
+0. Create commits and modifications to a separate issue / personal branch
+0. `git pull origin main` on local branch to view any merge conflicts
+0. push to remote and submit a pull request
+0. if there is a merge conflict or it modifies another persons files -> receive one approval before merging the PR
+0. merge the pull request into `main`
