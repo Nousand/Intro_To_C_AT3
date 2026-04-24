@@ -1,111 +1,62 @@
-#ifndef INTERFACE_H
-#define INTERFACE_H
+#ifndef INTERFACE_H_
+#define INTERFACE_H_
 
-#include "patient.h"
+#include "data.h"
 
 /*******************************************************************************
- * Function prototypes for interface.h
+ * Function prototypes for Interface.h
 *******************************************************************************/
 
-
 /*******************************************************************************
- * save patient data
- * uses LZF compression to compress the patients list and scans list
- * -> char* filename    => string for filename of output ".db" file; eg. "sample" -> outputs "sample.db" files
+ * SavePatientData
+ * saves patient data into a file after encryption and compression
+ * -> char *filename    => string for filename of output ".db" file
  * -> patient_t *pat_db => array of patients
- * -> int pat_amt       => length of pat_db
- * -> scan_t *scan_db   => array of scans
- * -> int scan_amt      => length of scan_db
- * <- int               => error code for success (0 : success, 1 : fail)
+ * -> int pat_amt       => number of patients in pat_db
+ * <- int               => error code (0 : success, 1 : fail)
 *******************************************************************************/
-int SavePatientData(patient_t *patients, int count, const char *filename);
+int SavePatientData(char *filename, patient_t *pat_db, int pat_amt);
 
 
-/*
-Function: LoadPatientData
-
-Description:
-Loads patient records from a file into memory.
-The function will also handle decryption and decompression
-before storing the data in the array.
-
-Inputs:
-  patients - array to store loaded patient data
-  max_count - maximum capacity of the array
-  filename - name of the file to load data from
-
-Return:
-  Number of records successfully loaded
-  -1 if error occurs (e.g., file not found)
-
-Post:
-  Patient array is populated with decrypted and decompressed data.
-*/
-int LoadPatientData(patient_t *patients, int max_count, const char *filename);
+/*******************************************************************************
+ * LoadPatientData
+ * loads patient data from a file and performs decompression and decryption
+ * -> char *filename     => string for filename of input ".db" file
+ * -> patient_t **pat_db => pointer to patient array to be modified
+ * <- int                => number of patients loaded (-1 : fail)
+*******************************************************************************/
+int LoadPatientData(char *filename, patient_t **pat_db);
 
 
-/*
-Function: AddPatientData
-
-Description:
-Adds a new patient record into the patient array.
-User input is typically collected via CLI before calling this function.
-
-Inputs:
-  patients - array of patient_t structures
-  count - pointer to current number of patients
-
-Return:
-  0 - success
-  1 - failure (e.g., array is full)
-
-Post:
-  A new patient record is added and count is incremented.
-*/
-int AddPatientData(patient_t *patients, int *count);
+/*******************************************************************************
+ * AddPatientData
+ * adds a new patient into the patient database
+ * -> patient_t *pat_db => array of patients
+ * -> int *pat_amt      => pointer to number of patients
+ * <- int               => error code (0 : success, 1 : fail)
+*******************************************************************************/
+int AddPatientData(patient_t *pat_db, int *pat_amt);
 
 
-/*
-Function: ViewPatientData
-
-Description:
-Displays all patient records currently stored in memory
-in a readable format via the command line.
-
-Inputs:
-  patients - array of patient_t structures
-  count - number of patients stored
-
-Return:
-  None
-
-Post:
-  Patient data is printed to the terminal.
-*/
-void ViewPatientData(const patient_t *patients, int count);
+/*******************************************************************************
+ * ViewPatientData
+ * displays all patient records in the database
+ * -> patient_t *pat_db => array of patients
+ * -> int pat_amt       => number of patients
+ * <- void
+*******************************************************************************/
+void ViewPatientData(patient_t *pat_db, int pat_amt);
 
 
-/*
-Function: DeletePatientData
-
-Description:
-Deletes a patient record from the array based on user input
-(e.g., index or patient name).
-
-Inputs:
-  patients - array of patient_t structures
-  count - pointer to number of patients
-  index - position of patient to delete
-
-Return:
-  0 - success
-  1 - failure (invalid index)
-
-Post:
-  Patient record is removed and array is shifted.
-  Count is decremented.
-*/
-int DeletePatientData(patient_t *patients, int *count, int index);
+/*******************************************************************************
+ * DeletePatientData
+ * deletes a patient record from the database
+ * -> patient_t *pat_db => array of patients
+ * -> int *pat_amt      => pointer to number of patients
+ * -> int index         => index of patient to delete
+ * <- int               => error code (0 : success, 1 : fail)
+*******************************************************************************/
+int DeletePatientData(patient_t *pat_db, int *pat_amt, int index);
 
 
-#endif
+#endif // INTERFACE_H_
