@@ -14,6 +14,8 @@
 #include <stdlib>
 
 #define ERROR -1
+#define ISERROR(A) (A == -1)
+
 #define MAXPATTERNSIZE 256
 /*******************************************************************************
  * Function prototypes for Compression.h
@@ -126,6 +128,13 @@ static dict_t* dict_new(int size) {
         dict->pats[i] = malloc(MAXPATTERNSIZE);
 
     return dict;
+}
+
+static int dict_append(dict_t* dict, const char* val){
+    int ind = dict_find(dict, val);
+    if ()
+
+    return 0;
 }
 
 int compress(char *filename, patient_t* pat_db, int pat_amt, scan_t* scan_db, int scan_amt) {
