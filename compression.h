@@ -14,6 +14,7 @@
 #include <stdlib>
 
 #define ERROR -1
+#define MAXPATTERNSIZE 256
 /*******************************************************************************
  * Function prototypes for Compression.h
 *******************************************************************************/
@@ -111,12 +112,20 @@ updated_t decompress(char *filename, patient_t **pat_db, scan_t **scan_db);
 *******************************************************************************/
 
 static dict_t* dict_new(int size) {
+    /* Allocate struct */
     dict_t* dict;
     dict = malloc(sizeof(dict_t));
 
+    /* Allocate array and length fields */
     dict->len = size;
     dict->cap = size;
     dict->pats = malloc(size * sizeof(char*));
+
+    /* Allocate strings within the array */
+    for (int i = 0; i < size; i++)
+        dict->pats[i] = malloc(MAXPATTERNSIZE);
+
+    return dict;
 }
 
 int compress(char *filename, patient_t* pat_db, int pat_amt, scan_t* scan_db, int scan_amt) {
