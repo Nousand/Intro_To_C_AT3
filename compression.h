@@ -16,9 +16,7 @@
 #define COMPRESSION_H_
 
 #include "data.h"
-#include <cstddef>
-#include <cstdint>
-#include <cstdio>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -34,7 +32,11 @@
         }                                                                      \
     } while (0)
 
-#define MAXPATTERNSIZE 256
+#define MAXPATTERNSIZE 65535 /* max size of a 16 bit unsigned integer */
+
+/* Reimplementation of uint16_t from the <stdint.h> library
+ * as it's usage is not permitted as per AT3 specs */
+typedef unsigned short uint16_t;
 /*******************************************************************************
  * Function prototypes for Compression.h
  *******************************************************************************/
@@ -54,12 +56,12 @@ typedef struct {
 
 /*******************************************************************************
  * dict_new
- * creates the pseudo dictionary
+ * allocates memory and creates the pseudo dictionary
  * Input:
  *  -> int size => size of the array portion of the dictionary
  * Output:
  *  <- dict_t* => pointer to the newly initialised dictiionary
- *  TODO use a faster dictionary ie hashmap
+ *  TODO use a faster lookup dictionary ie hashmap
  *******************************************************************************/
 
 static dict_t *dict_new(int size);
@@ -99,8 +101,16 @@ static void dict_free(dict_t *dict);
 
 /*******************************************************************************
  * compress_raw
- * Uses LZW compression to compress an char buffer
  * Takes an uncompressed string to compress and its destination
+ *
+ * Uses LZW compression to compress an char buffer.
+ * 1. LZW compression builds a dictionary of patterns as it encodes;
+ * 2. Then it reads chars and expands until the pattern no longer matches any
+ *    in the dictionary
+ * 3. it then emits the index of the pattern and adds itself to dictionary
+ * 4. restart from current char
+ * LZW does not need the dictionary to decompress
+ *
  * Input:
  *  -> char* dest         => the destination buffer of the compressed data
  *  -> char* uncompressed => the input buffer (null-terminated) to compress
@@ -127,11 +137,12 @@ char *serialize(patient_t *pat_db, int pat_amt, scan_t *scan_db, int scan_amt);
  * decompresses a compressed buffer into a readable string
  * Input:
  *  -> char* dest       => the destination buffer of the compressed data
- *  -> char* compressed => the input buffer (null-terminated) to decompress
+ *  -> char* compressed => the input buffer to decompress
+ *  -> size_t inputlen  => the length of the compressed input buffer
  * Output:
  *  <- int              => error code for success (0 : success, -1 : fail)
  *******************************************************************************/
-static int decompress(char *dest, char *compressed);
+static int decompress(char *dest, char *compressed, size_t inputlen);
 
 /*******************************************************************************
  * Function Implementations
@@ -219,8 +230,9 @@ static int compress(char *dest, char *uncompressed) {
         TRY(dict_append(dict, safechr), dict_free(dict));
     }
 
-    dict->len = 256;
-
+    /* results are stored in size_t to ensure size compatibility with the
+     * dictionary array.
+     * This will later be converted to uint16_t for better compression */
     size_t trglen = strlen(uncompressed);
     size_t *result = (size_t *)malloc(trglen * sizeof(size_t));
     if (!result) {
@@ -284,6 +296,90 @@ static int compress(char *dest, char *uncompressed) {
     }
 
     free(result);
+    dict_free(dict);
+    return SUCCESS;
+}
+
+static int decompress(char *dest, char *compressed, size_t compressedlen) {
+
+    /* Same initial logic as compress */
+    dict_t *dict = dict_new(256);
+    if (!dict)
+        return ERROR;
+
+    size_t i;
+    char safechr[2] = "";
+    for (i = 0; i < 256; i++) {
+        safechr[0] = char(i);
+        TRY(dict_append(dict, safechr), dict_free(dict));
+    }
+
+    /* cast input buffer as uint16 */
+    uint16_t *inbuff = (uint16_t *)compressed;
+    size_t inlen = compressedlen / sizeof(uint16_t);
+
+    /* index to position in destination */
+    size_t destind = 0;
+
+    /* read write the first code (guaranteed to be one char) */
+    int prevcode = inbuff[0];
+    char *prevstr = dict->pats[prevcode]; /* string content of previous code */
+    size_t prevlen = strlen(prevstr);
+    memcpy(dest + destind, prevstr, prevlen);
+    destind += prevlen;
+
+    char tmppat[MAXPATTERNSIZE];
+
+    /* Translate each code to their equivalent string form
+     * note index from 1 */
+    for (i = 1; i < inlen; i++) {
+        int code = inbuff[i];
+        char *curstr;
+
+        if (code < (int)dict->len) {
+            /* code already in dictionary */
+            curstr = dict->pats[code];
+        } else if (code == (int)dict->len) {
+            /* if code not yet in dict =>
+             * entry is prevstr + first char of prevstr */
+            if (snprintf(tmppat, sizeof(tmppat), "%s%c", prevstr, prevstr[0]) >=
+                (int)sizeof(tmppat)) {
+                dict_free(dict);
+                return ERROR;
+            }
+            curstr = tmppat;
+        } else {
+            /* unknown code */
+            dict_free(dict);
+            return ERROR;
+        }
+
+        /* Write string to output */
+        prevlen = strlen(curstr);
+        memcpy(dest + destind, curstr, prevlen);
+        destind += prevlen;
+
+        /* add prevstr + first char of currstr to dictionary */
+        if (snprintf(tmppat, sizeof(tmppat), "%s%c", prevstr, curstr[0]) >=
+            (int)sizeof(tmppat)) {
+            dict_free(dict);
+            return ERROR;
+        }
+        /* Allocation failure case */
+        if (dict_append(dict, tmppat) == ERROR) {
+            dict_free(dict);
+            return ERROR;
+        }
+
+        if (code < (int)dict->len)
+            prevstr = dict->pats[code];
+        else
+            prevstr = dict->pats[dict->len - 1];
+        prevcode = code;
+    }
+
+    /* ensure output is readable as string */
+    dest[destind] = '\0';
     dict_free(dict);
     return SUCCESS;
 }
