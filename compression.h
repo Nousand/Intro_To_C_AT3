@@ -33,6 +33,7 @@
     } while (0)
 
 #define MAXPATTERNSIZE 65535 /* max size of a 16 bit unsigned integer */
+#define MAXDICTSIZE 65535 /* max size of a 16 bit unsigned integer */
 
 /* Reimplementation of uint16_t from the <stdint.h> library
  * as it's usage is not permitted as per AT3 specs */
@@ -170,10 +171,17 @@ static int dict_append(dict_t *dict, const char *val) {
     if (ind == ERROR)
         return SUCCESS;
         */
+    if (dict->len >= MAXDICTSIZE){
+        return SUCCESS;
+    }
 
     /* Dynamically resize dictionary at memory cap*/
     if (dict->len >= dict->cap) {
         dict->cap *= 2;
+
+        if (dict->cap >= MAXDICTSIZE)
+            dict->cap = MAXDICTSIZE;
+
         char **tmp = (char **)realloc(dict->pats, dict->cap * sizeof(char *));
         if (!tmp)
             return ERROR;
@@ -226,7 +234,7 @@ static int compress(char *dest, char *uncompressed) {
     size_t i;
     char safechr[2] = ""; /* Ensures chars are null-terminated before copy */
     for (i = 0; i < 256; i++) {
-        safechr[0] = char(i);
+        safechr[0] = (char)i;
         TRY(dict_append(dict, safechr), dict_free(dict));
     }
 
@@ -310,7 +318,7 @@ static int decompress(char *dest, char *compressed, size_t compressedlen) {
     size_t i;
     char safechr[2] = "";
     for (i = 0; i < 256; i++) {
-        safechr[0] = char(i);
+        safechr[0] = (char)i;
         TRY(dict_append(dict, safechr), dict_free(dict));
     }
 
