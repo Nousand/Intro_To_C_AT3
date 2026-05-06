@@ -1,3 +1,11 @@
+/*******************************************************************************
+ * Title: data.h
+ * Author: Rentaro Beattie
+ * Description:
+ * This file aggregates the common data structures used across the program
+ * into one header file that can be easily accessed by other files
+*******************************************************************************/
+
 #ifndef DATA_H_
 #define DATA_H_
 
@@ -19,7 +27,7 @@ typedef struct {
  * patient_t
  * -> char firstname[MAX_NAME_SIZE]
  * -> char surname[MAX_NAME_SIZE]
- * -> date_t dob => date of birth
+ * -> date_t dob                   => date of birth
  * -> char gender[MAX_GENDER_SIZE] => i.e "male" "female" "other"
 *******************************************************************************/
 typedef struct {
@@ -31,9 +39,9 @@ typedef struct {
 
 /*******************************************************************************
  * scan_t
- * -> patient_t *patient =>
- * -> char *content => Head of the raw image data itself
- * -> int len => length of file
+ * -> patient_t *patient => associated patient
+ * -> char *content      => Head of the raw image data itself
+ * -> int len            => length of file
 *******************************************************************************/
 typedef struct {
     patient_t *patient;
@@ -41,4 +49,4 @@ typedef struct {
     int        len;
 } scan_t;
 
-#endif // DATA_H_
+#endif /* DATA_H_ */
