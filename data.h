@@ -49,4 +49,4 @@ typedef struct {
     int        len;
 } scan_t;
 
-#endif // DATA_H_
+#endif /* DATA_H_ */

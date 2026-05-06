@@ -6,9 +6,9 @@
 
 
 build:
-	gcc -Wall -Werror -ansi -o a.out main.c -lm
+	gcc -Wall -Werror -o a.out main.c -lm
 brun:
-	gcc -Wall -Werror -ansi -o a.out main.c -lm
+	gcc -Wall -Werror -o a.out main.c -lm
 	./a.out
 run:
 	./a.out

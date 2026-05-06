@@ -12,6 +12,7 @@
  *  NOTE: both input and output strings
  *******************************************************************************/
 
+
 #ifndef COMPRESSION_H_
 #define COMPRESSION_H_
 
@@ -101,7 +102,7 @@ static int dict_append(dict_t *dict, const char *val);
 static void dict_free(dict_t *dict);
 
 /*******************************************************************************
- * compress_raw
+ * compress
  * Takes an uncompressed string to compress and its destination
  *
  * Uses LZW compression to compress an char buffer.
@@ -118,7 +119,7 @@ static void dict_free(dict_t *dict);
  * Output:
  *  <- int                => error code for success (0 : success, -1 : fail)
  *******************************************************************************/
-static int compress(char *dest, char *uncompressed);
+int compress(char *dest, char *uncompressed);
 
 /*******************************************************************************
  * serialize
@@ -143,7 +144,7 @@ char *serialize(patient_t *pat_db, int pat_amt, scan_t *scan_db, int scan_amt);
  * Output:
  *  <- int              => error code for success (0 : success, -1 : fail)
  *******************************************************************************/
-static int decompress(char *dest, char *compressed, size_t inputlen);
+int decompress(char *dest, char *compressed, size_t inputlen);
 
 /*******************************************************************************
  * Function Implementations
@@ -225,7 +226,7 @@ static void dict_free(dict_t *dict) {
     free(dict);
 }
 
-static int compress(char *dest, char *uncompressed) {
+int compress(char *dest, char *uncompressed) {
     dict_t *dict = dict_new(256);
     if (!dict)
         return ERROR;
@@ -308,7 +309,7 @@ static int compress(char *dest, char *uncompressed) {
     return SUCCESS;
 }
 
-static int decompress(char *dest, char *compressed, size_t compressedlen) {
+int decompress(char *dest, char *compressed, size_t compressedlen) {
 
     /* Same initial logic as compress */
     dict_t *dict = dict_new(256);
@@ -392,4 +393,4 @@ static int decompress(char *dest, char *compressed, size_t compressedlen) {
     return SUCCESS;
 }
 
-#endif // COMPRESSION_H_
+#endif /* COMPRESSION_H_ */
