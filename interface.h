@@ -1,3 +1,14 @@
+/*******************************************************************************
+ * File: Interface.h
+ * Author: Steven Fung
+ *
+ * Description:
+ * This header file contains the function prototypes for the command line
+ * interface module. The interface module allows the user to save, load, add,
+ * view, and delete patient records. It connects user actions with the patient
+ * database, compression module, and encryption module.
+*******************************************************************************/
+
 #ifndef INTERFACE_H_
 #define INTERFACE_H_
 
