@@ -121,18 +121,6 @@ static void dict_free(dict_t *dict);
  *******************************************************************************/
 int compress(char *dest, char *uncompressed);
 
-/*******************************************************************************
- * serialize
- * Serializes patient and scan data into a char buffer
- * Input:
- *  -> patient_t *pat_db => array of patients
- *  -> int pat_amt       => length of pat_db
- *  -> scan_t *scan_db   => array of scans
- *  -> int scan_amt      => length of scan_db
- * Output:
- *  <- char* => compressed char buffer
- *******************************************************************************/
-char *serialize(patient_t *pat_db, int pat_amt, scan_t *scan_db, int scan_amt);
 
 /*******************************************************************************
  * decompress
