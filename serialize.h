@@ -3,14 +3,19 @@
  * Author:
  * Description:
  * This header converts human readable, structured data e.g scan_t patient_t
- * and converts it into a single serialized database file
+ * and converts it into a single serialized char buffer (string)
+ * images are then stored locally as .bin files for easy deserialization
+ *
+ * USAGE:
+ * this should be called before the compression and encryption stages to convert
+ * data into format those functions can read (char *)
+ *
+ * read function prototypes for parameters necessary
  *
  * interface functions (functions to be called from outside):
  * -> serialize      => pass in arrays of partient_t and scan_t to receive a
  *  raw char buffer form of the data
  * -> deserialize    => deserialize a serialized buffer
- *
- * .db file format:
  *
  *******************************************************************************/
 #include "compression.h"
