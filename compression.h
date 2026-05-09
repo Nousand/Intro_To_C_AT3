@@ -3,9 +3,13 @@
  * Author:
  * Description:
  * This file contains the compression functionality implementation
- * handles: compression and decompression
- * called by: interface.h
+ * Compresses a file and outputs that compresed file, nothing else
  *
+ * USAGE:
+ * Compresses a char buffer (char*) and outputs it to the dest char buffer
+ * passed into the function.
+ *
+ * called by: interface.h
  * interface functions (functions to be called from outside):
  * -> compress      => when compressing raw data
  * -> decompress    => decompress a compressed buffer
