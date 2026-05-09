@@ -1,6 +1,10 @@
 /*******************************************************************************
+ * Title: search.c
  * Author: Marc Corrente
  * Student Number: 13901626
+ * Description:
+ * this file contains all of the search functions that will be used in the
+ * program.
 *******************************************************************************/
 
 #include <stdio.h>
@@ -29,7 +33,7 @@ int SearchByName(patient_t *pat_db, int pat_amt, const char *name){
     for(i = 0; i < pat_amt ; i++){
         if(strcmp(pat_db[i].firstname, name) == 0 || 
            strcmp(pat_db[i].surname, name) == 0  ){
-            reutrn i;
+            return i;
         }
     }
     return -1;
