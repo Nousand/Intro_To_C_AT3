@@ -3,15 +3,18 @@
  * Author:
  * Description:
  * This file contains the compression functionality implementation
- * handles: compression and decompression
- * called by: interface.h
+ * Compresses a file and outputs that compresed file, nothing else
  *
+ * USAGE:
+ * Compresses a char buffer (char*) and outputs it to the dest char buffer
+ * passed into the function.
+ *
+ * called by: interface.h
  * interface functions (functions to be called from outside):
  * -> compress      => when compressing raw data
  * -> decompress    => decompress a compressed buffer
  *  NOTE: both input and output strings
  *******************************************************************************/
-
 
 #ifndef COMPRESSION_H_
 #define COMPRESSION_H_
@@ -34,7 +37,7 @@
     } while (0)
 
 #define MAXPATTERNSIZE 65535 /* max size of a 16 bit unsigned integer */
-#define MAXDICTSIZE 65535 /* max size of a 16 bit unsigned integer */
+#define MAXDICTSIZE 65535    /* max size of a 16 bit unsigned integer */
 
 /* Reimplementation of uint16_t from the <stdint.h> library
  * as it's usage is not permitted as per AT3 specs */
@@ -122,19 +125,6 @@ static void dict_free(dict_t *dict);
 int compress(char *dest, char *uncompressed);
 
 /*******************************************************************************
- * serialize
- * Serializes patient and scan data into a char buffer
- * Input:
- *  -> patient_t *pat_db => array of patients
- *  -> int pat_amt       => length of pat_db
- *  -> scan_t *scan_db   => array of scans
- *  -> int scan_amt      => length of scan_db
- * Output:
- *  <- char* => compressed char buffer
- *******************************************************************************/
-char *serialize(patient_t *pat_db, int pat_amt, scan_t *scan_db, int scan_amt);
-
-/*******************************************************************************
  * decompress
  * decompresses a compressed buffer into a readable string
  * Input:
@@ -172,7 +162,7 @@ static int dict_append(dict_t *dict, const char *val) {
     if (ind == ERROR)
         return SUCCESS;
         */
-    if (dict->len >= MAXDICTSIZE){
+    if (dict->len >= MAXDICTSIZE) {
         return SUCCESS;
     }
 
