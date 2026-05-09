@@ -12,7 +12,6 @@
  *  NOTE: both input and output strings
  *******************************************************************************/
 
-
 #ifndef COMPRESSION_H_
 #define COMPRESSION_H_
 
@@ -34,7 +33,7 @@
     } while (0)
 
 #define MAXPATTERNSIZE 65535 /* max size of a 16 bit unsigned integer */
-#define MAXDICTSIZE 65535 /* max size of a 16 bit unsigned integer */
+#define MAXDICTSIZE 65535    /* max size of a 16 bit unsigned integer */
 
 /* Reimplementation of uint16_t from the <stdint.h> library
  * as it's usage is not permitted as per AT3 specs */
@@ -121,7 +120,6 @@ static void dict_free(dict_t *dict);
  *******************************************************************************/
 int compress(char *dest, char *uncompressed);
 
-
 /*******************************************************************************
  * decompress
  * decompresses a compressed buffer into a readable string
@@ -160,7 +158,7 @@ static int dict_append(dict_t *dict, const char *val) {
     if (ind == ERROR)
         return SUCCESS;
         */
-    if (dict->len >= MAXDICTSIZE){
+    if (dict->len >= MAXDICTSIZE) {
         return SUCCESS;
     }
 
