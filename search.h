@@ -1,3 +1,12 @@
+/*******************************************************************************
+ * Title: search.c
+ * Author: Marc Corrente
+ * Student Number: 13901626
+ * Description:
+ * this file contains all of the search function prototypes that will be used
+ * in the program as a header file.
+*******************************************************************************/
+
 #ifndef SEARCH_H_
 #define SEARCH_H_
 
@@ -56,4 +65,4 @@ void SortByDOB(patient_t *pat_db, int pat_amt);
 *******************************************************************************/
 int FilterByGender(patient_t *pat_db, int pat_amt, const char *gender, patient_t *result_db);
 
-#endif // SEARCH_H_
+#endif /* SEARCH_H_ */

@@ -1,3 +1,12 @@
+/*******************************************************************************
+ * Title: encrypt.c
+ * Author: Marc Corrente
+ * Student Number: 13901626
+ * Description:
+ * this file contains all of the encryption functions that will be used in the
+ * program.
+*******************************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,10 +29,10 @@
  * -> const char *str => null-terminated passphrase string
  * <- unsigned long   => resulting hash value
 *******************************************************************************/
-static unsigned long djb2_hash(){
+static unsigned long djb2_hash(const char *str){
     unsigned long hash = 5381;
     int c;
-    while(c = (unsigned char)*str++){
+    while((c = (unsigned char)*str++)){
         hash = ((hash << 5) + hash) ^ c;
     }
     return hash;
@@ -48,11 +57,11 @@ int GenerateKey(const char *passphrase, char *key_out, int key_len){
     /* fill key_out by mixing the hash with the index, 
        each byte of the key is derived from the passphrase */
     int i;
-    for(i = 0; i < key_len: i++){
+    for(i = 0; i < key_len; i++){
         hash = ((hash << 5) + hash) ^ (unsigned long)i;
         key_out[i] = (char)(hash & 0xFF);
     }
-    return;
+    return 0;
 }
 
 /*******************************************************************************
