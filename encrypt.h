@@ -1,6 +1,10 @@
 /*******************************************************************************
+ * Title: encrypt.h
  * Author: Marc Corrente
  * Student Number: 13901626
+ * Description:
+ * this file contains all of the encryption function prototypes that will be 
+ * used in the program as one header file.
 *******************************************************************************/
 
 #ifndef ENCRYPT_H_
@@ -74,7 +78,7 @@ int EncryptWithPassphrase(unsigned char *data, int len, const char *passphrase);
 *******************************************************************************/
 int DecryptWithPassphrase(unsigned char *data, int len, const char *passphrase);
 
-#endif // ENCRYPT_H_
+#endif /* ENCRYPT_H_ */
 
 
 
