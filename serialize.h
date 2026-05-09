@@ -57,8 +57,8 @@ int serialize(char *dest, size_t dest_size, patient_t *pat_db, size_t pat_amt,
  * Output:
  *  <- int => 0 for success -1 for error
  *******************************************************************************/
-int deserialize(char *dest, patient_t *pat_db, int *pat_amt, scan_t *scan_db,
-                int *scan_amt);
+int deserialize(char *src, patient_t *pat_db, size_t *pat_amt, scan_t *scan_db,
+                size_t *scan_amt);
 
 /*******************************************************************************
  * Function Implementations
@@ -78,7 +78,7 @@ int serialize(char *dest, size_t dest_size, patient_t *pat_db, size_t pat_amt,
          *                  => first,sur,1960,01,01,other
          * Catch buffer overflow aswell */
         size_t rem = dest_size - offset;
-        if (rem <= 0)
+        if (rem == 0)
             return ERROR;
 
         int n = snprintf(dest + offset, rem, "%s,%s,%d-%02d-%02d,%s\n",
@@ -92,11 +92,123 @@ int serialize(char *dest, size_t dest_size, patient_t *pat_db, size_t pat_amt,
         offset += (size_t)n;
     }
 
+    if (dest_size - offset < 3)
+        return ERROR;
+    memcpy(dest + offset, "^^\n", 3);
+    offset += 3;
+
+    /* For patient scans, images are stored in scan.bin files locally */
+    for (i = 0; i < scan_amt; i++) {
+        scan_t *key = &scan_db[i];
+
+        char filename[64];
+        snprintf(filename, sizeof(filename), "scan_%zu.bin", i);
+        FILE *f = fopen(filename, "wb");
+        if (!f)
+            return ERROR;
+        fwrite(key->content, 1, key->len, f);
+        fclose(f);
+
+        /* after image is made, write the metadata */
+        size_t rem = dest_size - offset;
+        if (rem == 0)
+            return ERROR;
+        int n =
+            snprintf(dest + offset, rem, "%d,%s,%zu\n",
+                     (int)(key->patient - pat_db), filename, (size_t)key->len);
+        if (n < 0 || (size_t)n >= rem)
+            return ERROR;
+        offset += (size_t)n;
+    }
+
     return SUCCESS;
 }
 
-int deserialize(char *dest, patient_t *pat_db, int *pat_amt, scan_t *scan_db,
-                int *scan_amt) {
+int deserialize(char *src, patient_t *pat_db, size_t *pat_amt, scan_t *scan_db,
+                size_t *scan_amt) {
+    size_t pcount = 0;
+    size_t scount = 0;
+    char *line = src;
+    size_t scanmode = 0;
+
+    while (*line != '\0') {
+        char *newline = strchr(line, '\n');
+        size_t linelen = newline ? (size_t)(newline - line) : strlen(line);
+
+        /* Check for divider */
+        if (linelen == 2 && memcmp(line, "^^", 2) == 0) {
+            scanmode = 1;
+            line = newline ? newline + 1 : line + linelen;
+            continue;
+        }
+
+        char tmp[512];
+        if (linelen >= sizeof(tmp))
+            return ERROR;
+        memcpy(tmp, line, linelen);
+        tmp[linelen] = '\0';
+
+        if (!scanmode) {
+            /* firstname,surname,YYYY-MM-DD,gender */
+            patient_t *pat = &pat_db[pcount];
+
+            char *firstname = strtok(tmp, ",");
+            char *surname = strtok(NULL, ",");
+            char *dob_str = strtok(NULL, ",");
+            char *gender = strtok(NULL, ",");
+
+            if (!firstname || !surname || !dob_str || !gender)
+                return ERROR;
+
+            if (sscanf(dob_str, "%d-%d-%d", &pat->dob.year, &pat->dob.month,
+                       &pat->dob.day) != 3)
+                return ERROR;
+
+            strncpy(pat->firstname, firstname, sizeof(pat->firstname) - 1);
+            pat->firstname[sizeof(pat->firstname) - 1] = '\0';
+
+            strncpy(pat->surname, surname, sizeof(pat->surname) - 1);
+            pat->surname[sizeof(pat->surname) - 1] = '\0';
+
+            strncpy(pat->gender, gender, sizeof(pat->gender) - 1);
+            pat->gender[sizeof(pat->gender) - 1] = '\0';
+
+            pcount++;
+        } else {
+            scan_t *scan = &scan_db[scount];
+
+            char *idxstr = strtok(tmp, ",");
+            char *filenamestr = strtok(NULL, ",");
+            char *lenstr = strtok(NULL, ",");
+
+            if (!idxstr || !filenamestr || !lenstr)
+                return ERROR;
+
+            scan->len = (size_t)atoi(lenstr);
+            scan->patient = &pat_db[atoi(idxstr)];
+
+            scan->content = (char *)malloc(scan->len);
+            if (!scan->content)
+                return ERROR;
+
+            FILE *f = fopen(filenamestr, "rb");
+            if (!f) {
+                free(scan->content);
+                return ERROR;
+            }
+            fread(scan->content, 1, scan->len, f);
+            fclose(f);
+
+            scount++;
+        }
+
+        line = newline ? newline + 1 : line + linelen;
+        if (!newline)
+            break;
+    }
+
+    *pat_amt = pcount;
+    *scan_amt = scount;
     return SUCCESS;
 }
 
