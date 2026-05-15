@@ -22,6 +22,8 @@ int GenerateKey(const char *passphrase, char *key_out, int key_len);
 int ValidateKey(const char *key, int min_len);
 int EncryptWithPassphrase(unsigned char *data, int len, const char *passphrase);
 int DecryptWithPassphrase(unsigned char *data, int len, const char *passphrase);
+int EncryptScan(scan_t *scan, const char *passphrase);
+int DecryptScan(scan_t *scan, const char *passphrase);
 
 #ifdef ENCRYPT_IMPLEMENTATION
 
@@ -197,6 +199,45 @@ int DecryptWithPassphrase(unsigned char *data, int len, const char *passphrase){
     }
 
     return 0;
+}
+
+/*******************************************************************************
+ * EncryptScan
+ * Wrapper function - encrypts the raw image content of a scan_t in place.
+ * operates directly on scan->content using scan->len as the buffer length,
+ * so no manual casting or length tracking is needed by the caller.
+ * NOTE: scan->content is NOT null-terminated — scan->len must be accurate.
+ * -> scan_t *scan           => pointer to the scan whose image data to encrypt
+ * -> const char *passphrase => null-terminated passphrase string eg. "hello"
+ * <- int                    => error code (0 : success, 1 : fail)
+*******************************************************************************/
+int EncryptScan(scan_t *scan, const char *passphrase){
+    if(scan == NULL || scan->content == NULL || scan->len <= 0){
+        printf("ERROR: invalid scan.\n");
+        return 1;
+    }
+ 
+    return EncryptWithPassphrase((unsigned char *)scan->content, scan->len,
+                                 passphrase);
+}
+ 
+/*******************************************************************************
+ * DecryptScan
+ * Wrapper function - decrypts the raw image content of a scan_t in place.
+ * operates directly on scan->content using scan->len as the buffer length,
+ * so no manual casting or length tracking is needed by the caller.
+ * NOTE: scan->content is NOT null-terminated — scan->len must be accurate.
+ * -> scan_t *scan           => pointer to the scan whose image data to decrypt
+ * -> const char *passphrase => null-terminated passphrase string eg. "hello"
+ * <- int                    => error code (0 : success, 1 : fail)
+*******************************************************************************/
+int DecryptScan(scan_t *scan, const char *passphrase){
+    if(scan == NULL || scan->content == NULL || scan->len <= 0){
+        printf("ERROR: invalid scan.\n");
+        return 1;
+    }
+    return DecryptWithPassphrase((unsigned char *)scan->content, scan->len,
+                                 passphrase);
 }
 
 #endif /* ENCRYPT_IMPLEMENTATION */
