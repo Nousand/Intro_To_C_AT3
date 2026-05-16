@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Title: serialize.h
- * Author:
+ * Author: Rentaro Beattie
  * Description:
  * This header converts human readable, structured data e.g scan_t patient_t
  * and converts it into a single serialized char buffer (string)
- * images are then stored locally as .bin files for easy deserialization
+ * images are then stored locally as .rawimg files for easy deserialization
  *
  * USAGE:
  * this should be called before the compression and encryption stages to convert
@@ -102,12 +102,12 @@ int serialize(char *dest, size_t dest_size, patient_t *pat_db, size_t pat_amt,
     memcpy(dest + offset, "^^\n", 3);
     offset += 3;
 
-    /* For patient scans, images are stored in scan.bin files locally */
+    /* For patient scans, images are stored in scan.rawimg files locally */
     for (i = 0; i < scan_amt; i++) {
         scan_t *key = &scan_db[i];
 
         char filename[64];
-        snprintf(filename, sizeof(filename), "scan_%zu.bin", i);
+        snprintf(filename, sizeof(filename), "scan_%zu.rawimg", i);
         FILE *f = fopen(filename, "wb");
         if (!f)
             return ERROR;

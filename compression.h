@@ -1,6 +1,6 @@
 /*******************************************************************************
  * Title: compression.h
- * Author:
+ * Author: Rentaro Beattie
  * Description:
  * This file contains the compression functionality implementation
  * Compresses a file and outputs that compresed file, nothing else
@@ -120,7 +120,7 @@ static void dict_free(dict_t *dict);
  *  -> char* dest         => the destination buffer of the compressed data
  *  -> char* uncompressed => the input buffer (null-terminated) to compress
  * Output:
- *  <- int                => error code for success (0 : success, -1 : fail)
+ *  <- int                => error code (-1) for failure, file size for success
  *******************************************************************************/
 int compress(char *dest, char *uncompressed);
 
@@ -296,7 +296,7 @@ int compress(char *dest, char *uncompressed) {
 
     free(result);
     dict_free(dict);
-    return SUCCESS;
+    return (int)reslen;
 }
 
 int decompress(char *dest, char *compressed, size_t compressedlen) {

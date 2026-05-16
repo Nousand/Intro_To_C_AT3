@@ -7,7 +7,7 @@
  * interface module. The interface module allows the user to save, load, add,
  * view, and delete patient records. It connects user actions with the patient
  * database, compression module, and encryption module.
-*******************************************************************************/
+ *******************************************************************************/
 
 #ifndef INTERFACE_H_
 #define INTERFACE_H_
@@ -30,7 +30,7 @@
 
 /*******************************************************************************
  * Function prototypes for Interface.h
-*******************************************************************************/
+ *******************************************************************************/
 
 /*******************************************************************************
  * SavePatientData
@@ -41,10 +41,9 @@
  * -> scan_t *scan_db   => array of additional documents
  * -> int scan_amt      => number of additional documents
  * <- int               => error code (0 : success, 1 : fail)
-*******************************************************************************/
+ *******************************************************************************/
 int SavePatientData(char *filename, patient_t *pat_db, int pat_amt,
                     scan_t *scan_db, int scan_amt);
-
 
 /*******************************************************************************
  * LoadPatientData
@@ -54,10 +53,9 @@ int SavePatientData(char *filename, patient_t *pat_db, int pat_amt,
  * -> scan_t **scan_db   => pointer to scan array to be modified
  * -> int *scan_amt      => pointer to number of scans loaded
  * <- int                => number of patients loaded (-1 : fail)
-*******************************************************************************/
+ *******************************************************************************/
 int LoadPatientData(char *filename, patient_t **pat_db, scan_t **scan_db,
                     int *scan_amt);
-
 
 /*******************************************************************************
  * AddPatientData
@@ -65,9 +63,8 @@ int LoadPatientData(char *filename, patient_t **pat_db, scan_t **scan_db,
  * -> patient_t *pat_db => array of patients
  * -> int *pat_amt      => pointer to number of patients
  * <- int               => error code (0 : success, 1 : fail)
-*******************************************************************************/
+ *******************************************************************************/
 int AddPatientData(patient_t *pat_db, int *pat_amt);
-
 
 /*******************************************************************************
  * ViewPatientData
@@ -77,10 +74,9 @@ int AddPatientData(patient_t *pat_db, int *pat_amt);
  * -> scan_t *scan_db   => array of attached documents
  * -> int scan_amt      => number of attached documents
  * <- void
-*******************************************************************************/
+ *******************************************************************************/
 void ViewPatientData(patient_t *pat_db, int pat_amt, scan_t *scan_db,
                      int scan_amt);
-
 
 /*******************************************************************************
  * DeletePatientData
@@ -89,7 +85,7 @@ void ViewPatientData(patient_t *pat_db, int pat_amt, scan_t *scan_db,
  * -> int *pat_amt      => pointer to number of patients
  * -> int index         => index of patient to delete
  * <- int               => error code (0 : success, 1 : fail)
-*******************************************************************************/
+ *******************************************************************************/
 int DeletePatientData(patient_t *pat_db, int *pat_amt, int index);
 
 /*******************************************************************************
@@ -101,26 +97,26 @@ int DeletePatientData(patient_t *pat_db, int *pat_amt, int index);
  * -> int *scan_amt     => pointer to number of additional documents
  * -> int index         => index of patient to update
  * <- int               => error code (0 : success, 1 : fail)
-*******************************************************************************/
+ *******************************************************************************/
 int AttachAdditionalDocument(patient_t *pat_db, int pat_amt, scan_t *scan_db,
                              int *scan_amt, int index);
 
 /*******************************************************************************
  * RemovePatientDocuments
  * removes additional documents attached to a patient being deleted
-*******************************************************************************/
+ *******************************************************************************/
 void RemovePatientDocuments(patient_t *pat_db, scan_t *scan_db, int *scan_amt,
                             int patient_index);
 
 /*******************************************************************************
  * FreeScanData
  * frees all attached document content
-*******************************************************************************/
+ *******************************************************************************/
 void FreeScanData(scan_t *scan_db, int scan_amt);
 
 /*******************************************************************************
  * Helper function prototypes for Interface.h
-*******************************************************************************/
+ *******************************************************************************/
 static void InterfaceClearInputBuffer(void);
 static void InterfaceReadLine(char str[], int size);
 static void InterfaceCopyLimitedString(char destination[], const char source[],
@@ -133,7 +129,7 @@ static void InterfaceFormatDate(char destination[], int size, date_t dob);
 
 /*******************************************************************************
  * Helper function implementations
-*******************************************************************************/
+ *******************************************************************************/
 static void InterfaceClearInputBuffer(void) {
     int ch;
     while ((ch = getchar()) != '\n' && ch != EOF) {
@@ -204,8 +200,7 @@ static int InterfaceIsValidDate(date_t dob) {
         return 0;
     }
 
-    return dob.day >= 1 &&
-           dob.day <= InterfaceDaysInMonth(dob.month, dob.year);
+    return dob.day >= 1 && dob.day <= InterfaceDaysInMonth(dob.month, dob.year);
 }
 
 static void InterfaceFormatDate(char destination[], int size, date_t dob) {
@@ -216,7 +211,7 @@ static void InterfaceFormatDate(char destination[], int size, date_t dob) {
 /*******************************************************************************
  * SavePatientData
  * serializes, compresses, encrypts, and writes patient records to a file.
-*******************************************************************************/
+ *******************************************************************************/
 int SavePatientData(char *filename, patient_t *pat_db, int pat_amt,
                     scan_t *scan_db, int scan_amt) {
     FILE *fp;
@@ -225,8 +220,7 @@ int SavePatientData(char *filename, patient_t *pat_db, int pat_amt,
     int serialized_len;
     int compressed_len;
 
-    if (filename == NULL || pat_db == NULL || pat_amt < 0 ||
-        scan_amt < 0) {
+    if (filename == NULL || pat_db == NULL || pat_amt < 0 || scan_amt < 0) {
         printf("Save error\n");
         return 1;
     }
@@ -250,7 +244,7 @@ int SavePatientData(char *filename, patient_t *pat_db, int pat_amt,
         return 1;
     }
 
-    if (compress(compressed, serialized) != SUCCESS) {
+    if (compress(compressed, serialized) < SUCCESS) {
         free(compressed);
         printf("Save error\n");
         return 1;
@@ -287,7 +281,7 @@ int SavePatientData(char *filename, patient_t *pat_db, int pat_amt,
 /*******************************************************************************
  * LoadPatientData
  * reads, decrypts, decompresses, and deserializes patient records from a file.
-*******************************************************************************/
+ *******************************************************************************/
 int LoadPatientData(char *filename, patient_t **pat_db, scan_t **scan_db,
                     int *scan_amt) {
     FILE *fp;
@@ -361,8 +355,7 @@ int LoadPatientData(char *filename, patient_t **pat_db, scan_t **scan_db,
                               INTERFACE_PASSPHRASE) != 0 ||
         decompress(serialized, compressed, (size_t)compressed_len) != SUCCESS ||
         deserialize(serialized, *pat_db, &pat_amt, *scan_db,
-                    &loaded_scan_amt) !=
-            SUCCESS) {
+                    &loaded_scan_amt) != SUCCESS) {
         free(compressed);
         free(serialized);
         free(*pat_db);
@@ -383,7 +376,7 @@ int LoadPatientData(char *filename, patient_t **pat_db, scan_t **scan_db,
 /*******************************************************************************
  * AddPatientData
  * asks for one patient record and appends it to the database.
-*******************************************************************************/
+ *******************************************************************************/
 int AddPatientData(patient_t *pat_db, int *pat_amt) {
     patient_t new_patient;
     char buffer[INTERFACE_INPUT_SIZE];
@@ -407,8 +400,8 @@ int AddPatientData(patient_t *pat_db, int *pat_amt) {
     InterfaceCopyLimitedString(new_patient.surname, buffer, MAX_NAME_SIZE);
 
     do {
-        if (InterfaceReadInt("Date of birth(day): >",
-                             &new_patient.dob.day) != 0) {
+        if (InterfaceReadInt("Date of birth(day): >", &new_patient.dob.day) !=
+            0) {
             printf("Invalid day. ");
         } else if (InterfaceReadInt("Date of birth(month): >",
                                     &new_patient.dob.month) != 0) {
@@ -435,7 +428,7 @@ int AddPatientData(patient_t *pat_db, int *pat_amt) {
 /*******************************************************************************
  * ViewPatientData
  * displays all patient records in a fixed-width table.
-*******************************************************************************/
+ *******************************************************************************/
 void ViewPatientData(patient_t *pat_db, int pat_amt, scan_t *scan_db,
                      int scan_amt) {
     int i;
@@ -470,7 +463,7 @@ void ViewPatientData(patient_t *pat_db, int pat_amt, scan_t *scan_db,
 /*******************************************************************************
  * AttachAdditionalDocument
  * reads a local image/document file into scan_t.content for a patient.
-*******************************************************************************/
+ *******************************************************************************/
 int AttachAdditionalDocument(patient_t *pat_db, int pat_amt, scan_t *scan_db,
                              int *scan_amt, int index) {
     char buffer[INTERFACE_INPUT_SIZE];
@@ -478,8 +471,7 @@ int AttachAdditionalDocument(patient_t *pat_db, int pat_amt, scan_t *scan_db,
     long file_len;
     char *content;
 
-    if (pat_db == NULL || scan_db == NULL || scan_amt == NULL ||
-        pat_amt <= 0) {
+    if (pat_db == NULL || scan_db == NULL || scan_amt == NULL || pat_amt <= 0) {
         printf("List is empty\n");
         return 1;
     }
@@ -554,7 +546,7 @@ int AttachAdditionalDocument(patient_t *pat_db, int pat_amt, scan_t *scan_db,
 /*******************************************************************************
  * RemovePatientDocuments
  * frees documents for a deleted patient and keeps other patient links correct.
-*******************************************************************************/
+ *******************************************************************************/
 void RemovePatientDocuments(patient_t *pat_db, scan_t *scan_db, int *scan_amt,
                             int patient_index) {
     int i = 0;
@@ -583,7 +575,7 @@ void RemovePatientDocuments(patient_t *pat_db, scan_t *scan_db, int *scan_amt,
 /*******************************************************************************
  * FreeScanData
  * frees all attached document content.
-*******************************************************************************/
+ *******************************************************************************/
 void FreeScanData(scan_t *scan_db, int scan_amt) {
     int i;
 
@@ -602,7 +594,7 @@ void FreeScanData(scan_t *scan_db, int scan_amt) {
 /*******************************************************************************
  * DeletePatientData
  * deletes the patient at the given zero-based index.
-*******************************************************************************/
+ *******************************************************************************/
 int DeletePatientData(patient_t *pat_db, int *pat_amt, int index) {
     int i;
 

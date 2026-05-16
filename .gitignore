@@ -1,3 +1,8 @@
+# Data files
+*.db
+*.bin
+*.timg
+
 # Prerequisites
 *.d
 
