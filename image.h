@@ -91,20 +91,32 @@ int to_rawimg(char *filepath, char *out_name) {
 }
 
 int bin2origin(scan_t *scan_db, size_t scan_amt) {
-    char name[INITNAMESIZE];
-    char nname[NAMESIZE];
-    char pname[NAMESIZE];
-    char *dot;
+    char base_path[NAMESIZE];
+    char bin_path[NAMESIZE + 10];
+    char target_path[NAMESIZE + 10];
+    char *last_dot;
     int i;
-    for (i = 0; i < scan_amt; i++) {
-        strcpy(name, scan_db[i].content);
-        dot = strstr(name, ".");
-        if (dot)
-            *dot = '\0';
 
-        sprintf(pname, "database/%s.bin", name);
-        sprintf(nname, "database/%s", scan_db[i].content);
-        rename(pname, nname);
+    for (i = 0; i < (int)scan_amt; i++) {
+        if (scan_db[i].content == NULL)
+            continue;
+
+        strncpy(base_path, scan_db[i].content, NAMESIZE - 1);
+        base_path[NAMESIZE - 1] = '\0';
+
+        last_dot = strrchr(base_path, '.');
+
+        if (last_dot) {
+            *last_dot = '\0';
+        }
+
+        snprintf(bin_path, sizeof(bin_path), "%s.bin", base_path);
+        snprintf(target_path, sizeof(target_path), "%s", scan_db[i].content);
+
+        if (rename(bin_path, target_path) != 0) {
+            fprintf(stderr, "Failed to rename %s to %s\n", bin_path,
+                    target_path);
+        }
     }
 
     return SUCCESS;
