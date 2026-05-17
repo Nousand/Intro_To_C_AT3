@@ -428,15 +428,43 @@ static int InterfaceCompressFileData(int decompress) {
     scan.len = 0;
     scan.content = filename;
     if (decompress) {
+        char output_path[INTERFACE_INPUT_SIZE];
+
+        printf("Output file path (e.g. decompressed.jpg): >");
+        InterfaceReadLine(output_path, sizeof(output_path));
+        if (output_path[0] == '\0')
+            return 1;
+
+        FILE *file_check = fopen(filename, "rb");
+        if (file_check) {
+            fseek(file_check, 0, SEEK_END);
+            scan.len = ftell(file_check);
+            fclose(file_check);
+        } else {
+            printf("Error: Could not read file size.\n");
+            return 1;
+        }
+
         if (handle_images(&scan, 1, MODE_DECOMPRESS, "") < SUCCESS) {
             printf("Cannot Decompress File.\n");
             return 1;
         }
-        if (bin2origin(&scan, 1) < SUCCESS) {
-            printf("Cannot Decompress File.\n");
-            return 1;
+
+        char base_name[NAMESIZE];
+        strncpy(base_name, filename, NAMESIZE);
+        char *dot = strrchr(base_name, '.');
+        if (dot)
+            *dot = '\0';
+
+        char bin_name[NAMESIZE + 10];
+        snprintf(bin_name, sizeof(bin_name), "%s.bin", base_name);
+
+        if (rename(bin_name, output_path) == 0) {
+            printf("Decompressed successfully to: %s\n", output_path);
+        } else {
+            printf("Warning: Decompressed to %s but could not rename to %s\n",
+                   bin_name, output_path);
         }
-        printf("Decompressed file.\n");
     } else {
         char output[120];
         if (to_rawimg(filename, output) < SUCCESS) {
@@ -444,6 +472,17 @@ static int InterfaceCompressFileData(int decompress) {
             return 1;
         }
         scan.content = output;
+
+        FILE *file_check = fopen(output, "rb");
+        if (file_check) {
+            fseek(file_check, 0, SEEK_END);
+            scan.len = ftell(file_check);
+            fclose(file_check);
+        } else {
+            printf("Error: Could not read file size.\n");
+            return 1;
+        }
+
         if (handle_images(&scan, 1, MODE_COMPRESS, "") < SUCCESS) {
             printf("Cannot Compress File.\n");
             return 1;
@@ -460,56 +499,89 @@ static int InterfaceCompressFileData(int decompress) {
  *******************************************************************************/
 static int InterfaceCryptFileData(int decrypt) {
     char filename[INTERFACE_INPUT_SIZE];
-    scan_t scan;
     char passphrase[120];
+    scan_t scan;
 
     printf("File path: >");
     InterfaceReadLine(filename, INTERFACE_INPUT_SIZE);
-
-    if (filename[0] == '\0') {
-        printf("File error\n");
+    if (filename[0] == '\0')
         return 1;
-    }
 
     printf("passphrase: >");
-    InterfaceReadLine(passphrase, INTERFACE_INPUT_SIZE);
-
-    if (filename[0] == '\0') {
-        printf("File error\n");
+    InterfaceReadLine(passphrase,
+                      sizeof(passphrase)); // FIX 1: Read into passphrase
+    if (passphrase[0] == '\0')
         return 1;
-    }
 
     scan.patient = NULL;
     scan.len = 0;
-    scan.content = filename;
+
     if (decrypt) {
+        char output_path[INTERFACE_INPUT_SIZE];
+
+        printf("Output file path (e.g. restored.jpg): >");
+        InterfaceReadLine(output_path, sizeof(output_path));
+        if (output_path[0] == '\0')
+            return 1;
+
+        scan.content = filename;
+        FILE *file_check = fopen(filename, "rb");
+        if (file_check) {
+            fseek(file_check, 0, SEEK_END);
+            scan.len = ftell(file_check);
+            fclose(file_check);
+        } else {
+            printf("Error: Could not read file size.\n");
+            return 1;
+        }
+
         if (handle_images(&scan, 1, MODE_DECRYPT, passphrase) < SUCCESS) {
             printf("Cannot Decrypt File.\n");
             return 1;
         }
-        if (bin2origin(&scan, 1) < SUCCESS) {
-            printf("Cannot Decrypt File.\n");
-            return 1;
-        }
-        printf("Decrypted file.\n");
-    } else {
-        char output[120];
-        if (to_rawimg(filename, output) < SUCCESS) {
-            printf("Cannot Encrypt File.\n");
-            return 1;
-        }
-        printf("DEBUG content: '%s'\n", output);
-        scan.content = output;
-        if (handle_images(&scan, 1, MODE_ENCRYPT, passphrase) < SUCCESS) {
-            printf("Cannot Encrypt File.\n");
-            return 1;
-        }
-        printf("Encrypted file.\n");
-    }
 
+        // To fix the extension, we manually build the output name
+        char base_name[NAMESIZE];
+        strncpy(base_name, filename, NAMESIZE);
+        char *dot = strrchr(base_name, '.');
+        if (dot)
+            *dot = '\0';
+
+        char bin_name[NAMESIZE + 10];
+        snprintf(bin_name, sizeof(bin_name), "%s.bin", base_name);
+
+        if (rename(bin_name, output_path) == 0) {
+            printf("Decrypted successfully to: %s\n", output_path);
+        } else {
+            printf("Warning: Decrypted to %s but could not rename to %s\n",
+                   bin_name, output_path);
+        }
+    } else {
+        char output[NAMESIZE];
+        if (to_rawimg(filename, output) < SUCCESS) {
+            printf("Cannot Encrypt File (Check path).\n");
+            return 1;
+        }
+        scan.content = output;
+
+        FILE *file_check = fopen(output, "rb");
+        if (file_check) {
+            fseek(file_check, 0, SEEK_END);
+            scan.len = ftell(file_check);
+            fclose(file_check);
+        } else {
+            printf("Error: Could not read file size.\n");
+            return 1;
+        }
+
+        if (handle_images(&scan, 1, MODE_ENCRYPT, passphrase) < SUCCESS) {
+            printf("Encryption failed.\n");
+            return 1;
+        }
+        printf("Encrypted file: %s.enc\n", output);
+    }
     return 0;
 }
-
 /*******************************************************************************
  * EncryptFileData
  * asks for a file path and encrypts that file in place.

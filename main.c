@@ -4,6 +4,8 @@
  * 0. For windows and macos ensure gcc and make are installed
  * 1. In the command line cd into the directory
  * 2. run "make build" or "make" to compile the file
+ * 3. make sure the database/ folder exists otherwise the program will fail
+ *
  *
  * USAGE
  * execution: run "make run" (for platform agnosticism)
