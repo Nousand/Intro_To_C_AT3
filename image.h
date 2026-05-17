@@ -10,6 +10,7 @@
 
 #include "compression.h"
 #include "data.h"
+#include "encrypt.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -108,93 +109,34 @@ int bin2origin(scan_t *scan_db, size_t scan_amt) {
     return SUCCESS;
 }
 
-int compress_image(scan_t *scan_db, size_t scan_amt) {
-    int i;
-    for (i = 0; i < scan_amt; i++) {
+typedef enum {
+    MODE_COMPRESS,
+    MODE_DECOMPRESS,
+    MODE_ENCRYPT,
+    MODE_DECRYPT
+} process_mode_t;
+
+typedef struct {
+    process_mode_t mode;
+    const char *in_ext;
+    const char *out_ext;
+    const char *passphrase;
+    size_t out_scale;
+} image_processor_t;
+
+int process_images(scan_t *scan_db, size_t scan_amt, image_processor_t *proc) {
+    for (size_t i = 0; i < scan_amt; i++) {
         scan_t *key = &scan_db[i];
 
-        /* ensure file searchs for .bin files in database/ */
-        char name[NAMESIZE] = "database/";
-        strcat(name, key->content);
-        char *dot = strstr(name, ".");
+        char inname[NAMESIZE];
+        snprintf(inname, sizeof(inname), "database/%s", key->content);
+
+        char *dot = strrchr(inname, '.');
         if (dot)
             *dot = '\0';
-        strcat(name, ".bin");
+        strncat(inname, proc->in_ext, sizeof(inname) - strlen(inname) - 1);
 
-        /* absence of .bin files do not warrant raising errors thus continue */
-        FILE *file = fopen(name, "rb");
-        if (file == NULL) {
-            continue;
-        }
-
-        /* Go to end of file to determine the file_len */
-        if (fseek(file, 0, SEEK_END) != 0) {
-            fclose(file);
-            continue;
-        }
-
-        size_t file_len = ftell(file);
-        rewind(file);
-
-        /* read file into buffer */
-        char *buffer = (char *)malloc(file_len + 1);
-        size_t bytes_read = fread(buffer, 1, file_len, file);
-        if (bytes_read < file_len) {
-            free(buffer);
-            fclose(file);
-            continue;
-        }
-
-        buffer[bytes_read] = '\0';
-
-        /* close file here (to avoid repeating fclose(file) in err checks) */
-        fclose(file);
-
-        char *output = (char *)malloc(file_len + 1);
-
-        int comp_len = compress(output, buffer);
-        free(buffer);
-        if (comp_len < 0) {
-            free(output);
-            continue;
-        }
-
-        size_t comp_bytes = (size_t)comp_len * sizeof(uint16_t);
-
-        /* Write the compressed file to database */
-        dot = strstr(name, ".");
-        if (dot)
-            *dot = '\0';
-        strcat(name, ".cmp");
-
-        FILE *comped = fopen(name, "wb");
-        if (comped == NULL) {
-            free(output);
-            continue;
-        }
-
-        fwrite(output, 1, comp_bytes, comped);
-        fclose(comped);
-        free(output);
-    }
-
-    return SUCCESS;
-}
-
-int decompress_image(scan_t *scan_db, size_t scan_amt) {
-    int i;
-    for (i = 0; i < scan_amt; i++) {
-        scan_t *key = &scan_db[i];
-
-        /* Build .cmp path */
-        char name[NAMESIZE] = "database/";
-        strcat(name, key->content);
-        char *dot = strstr(name, ".");
-        if (dot)
-            *dot = '\0';
-        strcat(name, ".cmp");
-
-        FILE *file = fopen(name, "rb");
+        FILE *file = fopen(inname, "rb");
         if (file == NULL)
             continue;
 
@@ -202,53 +144,116 @@ int decompress_image(scan_t *scan_db, size_t scan_amt) {
             fclose(file);
             continue;
         }
-        size_t file_len = (size_t)ftell(file);
+
+        long told_len = ftell(file);
         rewind(file);
+        if (told_len <= 0) {
+            fclose(file);
+            continue;
+        }
+        size_t file_len = (size_t)told_len;
 
         char *buffer = (char *)malloc(file_len);
         if (!buffer) {
             fclose(file);
             continue;
         }
+
         size_t bytes_read = fread(buffer, 1, file_len, file);
         fclose(file);
+
         if (bytes_read < file_len) {
             free(buffer);
             continue;
         }
 
-        /* Decompress — output will be larger than input, allocate generously */
-        char *output = (char *)malloc(file_len * 8);
+        size_t alloc_scale = (proc->mode == MODE_DECOMPRESS) ? 8 : 2;
+        char *output = (char *)malloc(file_len * alloc_scale);
         if (!output) {
             free(buffer);
             continue;
         }
 
-        if (decompress(output, buffer, file_len) < SUCCESS) {
+        int result;
+        switch (proc->mode) {
+        case MODE_COMPRESS:
+            result = compress(output, buffer, file_len);
+            break;
+        case MODE_DECOMPRESS:
+            result = decompress(output, buffer, file_len);
+            break;
+        case MODE_ENCRYPT:
+            strcpy(output, buffer);
+            result = EncryptWithPassphrase((unsigned char *)output,
+                                           (int)file_len, proc->passphrase);
+            result = result ? ERROR : file_len;
+            break;
+        case MODE_DECRYPT:
+            strcpy(output, buffer);
+            result = DecryptWithPassphrase((unsigned char *)output,
+                                           (int)file_len, proc->passphrase);
+            result = result ? ERROR : file_len;
+            break;
+        default:
             free(buffer);
             free(output);
             continue;
         }
         free(buffer);
 
-        /* Write back to .bin */
-        char binname[NAMESIZE] = "database/";
-        strcat(binname, key->content);
-        dot = strstr(binname, ".");
-        if (dot)
-            *dot = '\0';
-        strcat(binname, ".bin");
-
-        FILE *binfile = fopen(binname, "wb");
-        if (binfile == NULL) {
+        if (result < 0) {
             free(output);
             continue;
         }
-        fwrite(output, 1, file_len * 8, binfile);
-        fclose(binfile);
+
+        char outname[NAMESIZE];
+        snprintf(outname, sizeof(outname), "database/%s", key->content);
+        dot = strrchr(outname, '.');
+        if (dot)
+            *dot = '\0';
+        strncat(outname, proc->out_ext, sizeof(outname) - strlen(outname) - 1);
+
+        FILE *outfile = fopen(outname, "wb");
+        if (outfile == NULL) {
+            free(output);
+            continue;
+        }
+
+        size_t out_bytes = (size_t)result * proc->out_scale;
+        fwrite(output, 1, out_bytes, outfile);
+        fclose(outfile);
         free(output);
     }
     return SUCCESS;
 }
 
+int image_adapter(scan_t *scan_db, size_t scan_amt, process_mode_t mode) {
+    image_processor_t proc;
+    proc.mode = mode;
+    switch (mode) {
+    case MODE_COMPRESS:
+        proc.in_ext = ".bin";
+        proc.out_ext = ".cmp";
+        proc.out_scale = sizeof(uint16_t);
+        break;
+    case MODE_DECOMPRESS:
+        proc.in_ext = ".cmp";
+        proc.out_ext = ".bin";
+        proc.out_scale = 1;
+        break;
+    case MODE_ENCRYPT:
+        proc.in_ext = ".bin";
+        proc.out_ext = ".enc";
+        proc.out_scale = 1;
+        break;
+    case MODE_DECRYPT:
+        proc.in_ext = ".enc";
+        proc.out_ext = ".bin";
+        proc.out_scale = 1;
+        break;
+    default:
+        return ERROR;
+    }
+    return process_images(scan_db, scan_amt, &proc);
+}
 #endif

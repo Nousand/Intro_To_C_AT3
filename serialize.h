@@ -20,6 +20,7 @@
  *******************************************************************************/
 #include "compression.h"
 #include "data.h"
+#include "image.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -102,19 +103,13 @@ int serialize(char *dest, size_t dest_size, patient_t *pat_db, size_t pat_amt,
     memcpy(dest + offset, "^^\n", 3);
     offset += 3;
 
-    /* For patient scans, images are stored in scan.rawimg files locally */
     for (i = 0; i < scan_amt; i++) {
         scan_t *key = &scan_db[i];
 
         char filename[64];
-        snprintf(filename, sizeof(filename), "scan_%zu.rawimg", i);
-        FILE *f = fopen(filename, "wb");
-        if (!f)
+        if (to_rawimg(key->content, filename) != SUCCESS)
             return ERROR;
-        fwrite(key->content, 1, key->len, f);
-        fclose(f);
 
-        /* after image is made, write the metadata */
         size_t rem = dest_size - offset;
         if (rem == 0)
             return ERROR;
@@ -192,17 +187,10 @@ int deserialize(char *src, patient_t *pat_db, size_t *pat_amt, scan_t *scan_db,
             scan->len = (size_t)atoi(lenstr);
             scan->patient = &pat_db[atoi(idxstr)];
 
-            scan->content = (char *)malloc(scan->len);
+            /* store filename in content for bin2origin to resolve later */
+            scan->content = strdup(filenamestr);
             if (!scan->content)
                 return ERROR;
-
-            FILE *f = fopen(filenamestr, "rb");
-            if (!f) {
-                free(scan->content);
-                return ERROR;
-            }
-            fread(scan->content, 1, scan->len, f);
-            fclose(f);
 
             scount++;
         }
@@ -214,6 +202,9 @@ int deserialize(char *src, patient_t *pat_db, size_t *pat_amt, scan_t *scan_db,
 
     *pat_amt = pcount;
     *scan_amt = scount;
+
+    bin2origin(scan_db, *scan_amt);
+
     return SUCCESS;
 }
 

@@ -57,24 +57,20 @@ int SavePatientData(char *filename, patient_t *pat_db, int pat_amt,
 int LoadPatientData(char *filename, patient_t **pat_db, scan_t **scan_db,
                     int *scan_amt);
 
-<<<<<<< HEAD
-=======
 /*******************************************************************************
  * EncryptFileData
  * asks for a file path and encrypts that file in place
  * <- int => error code (0 : success, 1 : fail)
-*******************************************************************************/
+ *******************************************************************************/
 int EncryptFileData(void);
 
 /*******************************************************************************
  * DecryptFileData
  * asks for a file path and decrypts that file in place
  * <- int => error code (0 : success, 1 : fail)
-*******************************************************************************/
+ *******************************************************************************/
 int DecryptFileData(void);
 
-
->>>>>>> d61c025dec00d4a03adcc2d3407522ec99084f43
 /*******************************************************************************
  * AddPatientData
  * adds a new patient into the patient database
@@ -395,7 +391,7 @@ int LoadPatientData(char *filename, patient_t **pat_db, scan_t **scan_db,
 /*******************************************************************************
  * InterfaceCryptFileData
  * asks for a file path, encrypts or decrypts its bytes, and writes it back.
-*******************************************************************************/
+ *******************************************************************************/
 static int InterfaceCryptFileData(int decrypt) {
     char filename[INTERFACE_INPUT_SIZE];
     FILE *fp;
@@ -490,18 +486,14 @@ static int InterfaceCryptFileData(int decrypt) {
 /*******************************************************************************
  * EncryptFileData
  * asks for a file path and encrypts that file in place.
-*******************************************************************************/
-int EncryptFileData(void) {
-    return InterfaceCryptFileData(0);
-}
+ *******************************************************************************/
+int EncryptFileData(void) { return InterfaceCryptFileData(0); }
 
 /*******************************************************************************
  * DecryptFileData
  * asks for a file path and decrypts that file in place.
-*******************************************************************************/
-int DecryptFileData(void) {
-    return InterfaceCryptFileData(1);
-}
+ *******************************************************************************/
+int DecryptFileData(void) { return InterfaceCryptFileData(1); }
 
 /*******************************************************************************
  * AddPatientData
