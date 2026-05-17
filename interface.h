@@ -439,15 +439,16 @@ static int InterfaceCompressFileData(int decompress) {
         printf("Decompressed file.\n");
     } else {
         char output[120];
-        if (to_rawimg(filename, output)) {
+        if (to_rawimg(filename, output) < SUCCESS) {
             printf("Cannot Compress File.\n");
             return 1;
         }
-        if (handle_images(&scan, 1, MODE_COMPRESS)) {
+        scan.content = output;
+        if (handle_images(&scan, 1, MODE_COMPRESS) < SUCCESS) {
             printf("Cannot Compress File.\n");
             return 1;
         }
-        printf("Decompressed file.\n");
+        printf("Compressed file.\n");
     }
 
     return 0;
