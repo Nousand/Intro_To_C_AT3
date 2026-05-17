@@ -161,7 +161,6 @@ int EncryptWithPassphrase(unsigned char *data, int len, const char *passphrase){
         printf("ERROR: key generation failed.\n");
         return 1;
     }
-
     if(EncryptData(data, len, key) != 0){
         printf("ERROR: encryption failed.\n");
         return 1;
@@ -192,7 +191,6 @@ int DecryptWithPassphrase(unsigned char *data, int len, const char *passphrase){
         printf("ERROR: key generation failed.\n");
         return 1;
     }
-
     if(DecryptData(data, len, key) != 0){
         printf("ERROR: decryption failed.\n");
         return 1;
