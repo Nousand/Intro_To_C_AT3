@@ -186,13 +186,13 @@ int process_images(scan_t *scan_db, size_t scan_amt, image_processor_t *proc) {
             result = decompress(output, buffer, file_len);
             break;
         case MODE_ENCRYPT:
-            strcpy(output, buffer);
+            memcpy(output, buffer, file_len);
             result = EncryptWithPassphrase((unsigned char *)output,
                                            (int)file_len, proc->passphrase);
             result = result ? ERROR : file_len;
             break;
         case MODE_DECRYPT:
-            strcpy(output, buffer);
+            memcpy(output, buffer, file_len);
             result = DecryptWithPassphrase((unsigned char *)output,
                                            (int)file_len, proc->passphrase);
             result = result ? ERROR : file_len;
@@ -242,7 +242,7 @@ int process_images(scan_t *scan_db, size_t scan_amt, image_processor_t *proc) {
                 free(output);
                 continue;
             }
-            memcpy(output, decompressed, (size_t)result);
+            memcpy(output, decompressed, file_len);
             free(decompressed);
             break;
         }
@@ -279,7 +279,8 @@ int process_images(scan_t *scan_db, size_t scan_amt, image_processor_t *proc) {
     return SUCCESS;
 }
 
-int handle_images(scan_t *scan_db, size_t scan_amt, process_mode_t mode) {
+int handle_images(scan_t *scan_db, size_t scan_amt, process_mode_t mode,
+                  char *passphrase) {
     image_processor_t proc;
     proc.mode = mode;
     switch (mode) {
@@ -287,31 +288,37 @@ int handle_images(scan_t *scan_db, size_t scan_amt, process_mode_t mode) {
         proc.in_ext = ".bin";
         proc.out_ext = ".cmp";
         proc.out_scale = sizeof(uint16_t);
+        proc.passphrase = passphrase;
         break;
     case MODE_DECOMPRESS:
         proc.in_ext = ".cmp";
         proc.out_ext = ".bin";
         proc.out_scale = 1;
+        proc.passphrase = passphrase;
         break;
     case MODE_ENCRYPT:
         proc.in_ext = ".bin";
         proc.out_ext = ".enc";
         proc.out_scale = 1;
+        proc.passphrase = passphrase;
         break;
     case MODE_DECRYPT:
         proc.in_ext = ".enc";
         proc.out_ext = ".bin";
         proc.out_scale = 1;
+        proc.passphrase = passphrase;
         break;
     case MODE_COMPRESS_ENCRYPT:
         proc.in_ext = ".bin";
         proc.out_ext = ".enc";
         proc.out_scale = 1;
+        proc.passphrase = passphrase;
         break;
     case MODE_DECRYPT_DECOMPRESS:
         proc.in_ext = ".enc";
         proc.out_ext = ".bin";
         proc.out_scale = 1;
+        proc.passphrase = passphrase;
         break;
     default:
         return ERROR;
