@@ -19,6 +19,7 @@
 #include "compression.h"
 #include "data.h"
 #include "encrypt.h"
+#include "image.h"
 #include "serialize.h"
 
 #define INTERFACE_MAX_PATIENTS 100
@@ -259,7 +260,7 @@ int SavePatientData(char *filename, patient_t *pat_db, int pat_amt,
         return 1;
     }
 
-    if (compress(compressed, serialized) < SUCCESS) {
+    if (compress(compressed, serialized, serialized_len) < SUCCESS) {
         free(compressed);
         printf("Save error\n");
         return 1;
@@ -283,6 +284,12 @@ int SavePatientData(char *filename, patient_t *pat_db, int pat_amt,
     if (fwrite(compressed, 1, (size_t)compressed_len, fp) !=
         (size_t)compressed_len) {
         fclose(fp);
+        free(compressed);
+        printf("Save error\n");
+        return 1;
+    }
+
+    if (handle_images(scan_db, scan_amt, MODE_COMPRESS_ENCRYPT) < SUCCESS) {
         free(compressed);
         printf("Save error\n");
         return 1;
@@ -382,6 +389,19 @@ int LoadPatientData(char *filename, patient_t **pat_db, scan_t **scan_db,
         return -1;
     }
 
+    if (handle_images(*scan_db, loaded_scan_amt, MODE_DECRYPT_DECOMPRESS) <
+        SUCCESS) {
+        free(compressed);
+        free(serialized);
+        free(*pat_db);
+        FreeScanData(*scan_db, (int)loaded_scan_amt);
+        free(*scan_db);
+        *pat_db = NULL;
+        *scan_db = NULL;
+        printf("Read error\n");
+        return -1;
+    }
+
     free(compressed);
     free(serialized);
     *scan_amt = (int)loaded_scan_amt;
@@ -392,13 +412,9 @@ int LoadPatientData(char *filename, patient_t **pat_db, scan_t **scan_db,
  * InterfaceCryptFileData
  * asks for a file path, encrypts or decrypts its bytes, and writes it back.
  *******************************************************************************/
-static int InterfaceCryptFileData(int decrypt) {
+static int InterfaceCompressFileData(int decompress) {
     char filename[INTERFACE_INPUT_SIZE];
-    FILE *fp;
-    long file_len;
-    char *content;
     scan_t scan;
-    int result;
 
     printf("File path: >");
     InterfaceReadLine(filename, INTERFACE_INPUT_SIZE);
@@ -408,78 +424,77 @@ static int InterfaceCryptFileData(int decrypt) {
         return 1;
     }
 
-    fp = fopen(filename, "rb");
-    if (fp == NULL) {
-        printf("Cannot open file.\n");
-        return 1;
-    }
-
-    if (fseek(fp, 0, SEEK_END) != 0) {
-        fclose(fp);
-        printf("Cannot read file.\n");
-        return 1;
-    }
-
-    file_len = ftell(fp);
-    if (file_len <= 0 || file_len > 2147483647L) {
-        fclose(fp);
-        printf("Cannot read file.\n");
-        return 1;
-    }
-
-    if (fseek(fp, 0, SEEK_SET) != 0) {
-        fclose(fp);
-        printf("Cannot read file.\n");
-        return 1;
-    }
-
-    content = (char *)malloc((size_t)file_len);
-    if (content == NULL) {
-        fclose(fp);
-        printf("Memory allocation failed\n");
-        return 1;
-    }
-
-    if (fread(content, 1, (size_t)file_len, fp) != (size_t)file_len) {
-        free(content);
-        fclose(fp);
-        printf("Cannot read file.\n");
-        return 1;
-    }
-    fclose(fp);
-
     scan.patient = NULL;
-    scan.content = content;
-    scan.len = (int)file_len;
-
-    if (decrypt) {
-        result = DecryptScan(&scan, INTERFACE_PASSPHRASE);
+    scan.len = 0;
+    scan.content = filename;
+    if (decompress) {
+        if (handle_images(&scan, 1, MODE_DECOMPRESS) < SUCCESS) {
+            printf("Cannot Decompress File.\n");
+            return 1;
+        }
+        if (bin2origin(&scan, 1) < SUCCESS) {
+            printf("Cannot Decompress File.\n");
+            return 1;
+        }
+        printf("Decompressed file.\n");
     } else {
-        result = EncryptScan(&scan, INTERFACE_PASSPHRASE);
+        char output[120];
+        if (to_rawimg(filename, output)) {
+            printf("Cannot Compress File.\n");
+            return 1;
+        }
+        if (handle_images(&scan, 1, MODE_COMPRESS)) {
+            printf("Cannot Compress File.\n");
+            return 1;
+        }
+        printf("Decompressed file.\n");
     }
 
-    if (result != 0) {
-        free(content);
+    return 0;
+}
+
+/*******************************************************************************
+ * InterfaceCryptFileData
+ * asks for a file path, encrypts or decrypts its bytes, and writes it back.
+ *******************************************************************************/
+static int InterfaceCryptFileData(int decrypt) {
+    char filename[INTERFACE_INPUT_SIZE];
+    scan_t scan;
+
+    printf("File path: >");
+    InterfaceReadLine(filename, INTERFACE_INPUT_SIZE);
+
+    if (filename[0] == '\0') {
         printf("File error\n");
         return 1;
     }
 
-    fp = fopen(filename, "wb");
-    if (fp == NULL) {
-        free(content);
-        printf("Cannot open file.\n");
-        return 1;
+    scan.patient = NULL;
+    scan.len = 0;
+    scan.content = filename;
+    if (decrypt) {
+        if (handle_images(&scan, 1, MODE_DECRYPT) < SUCCESS) {
+            printf("Cannot Decrypt File.\n");
+            return 1;
+        }
+        if (bin2origin(&scan, 1) < SUCCESS) {
+            printf("Cannot Decrypt File.\n");
+            return 1;
+        }
+        printf("Decrypted file.\n");
+    } else {
+        char output[120];
+        if (to_rawimg(filename, output) < SUCCESS) {
+            printf("Cannot Encrypt File.\n");
+            return 1;
+        }
+        if (handle_images(&scan, 1, MODE_ENCRYPT) < SUCCESS) {
+            printf("Cannot Encrypt File.\n");
+            return 1;
+        }
+        printf("Encrypted file.\n");
     }
 
-    if (fwrite(content, 1, (size_t)file_len, fp) != (size_t)file_len) {
-        free(content);
-        fclose(fp);
-        printf("Cannot write file.\n");
-        return 1;
-    }
-
-    free(content);
-    fclose(fp);
     return 0;
 }
 
@@ -590,8 +605,6 @@ int AttachAdditionalDocument(patient_t *pat_db, int pat_amt, scan_t *scan_db,
                              int *scan_amt, int index) {
     char buffer[INTERFACE_INPUT_SIZE];
     FILE *fp;
-    long file_len;
-    char *content;
 
     if (pat_db == NULL || scan_db == NULL || scan_amt == NULL || pat_amt <= 0) {
         printf("List is empty\n");
@@ -621,44 +634,11 @@ int AttachAdditionalDocument(patient_t *pat_db, int pat_amt, scan_t *scan_db,
         printf("Cannot open document.\n");
         return 1;
     }
-
-    if (fseek(fp, 0, SEEK_END) != 0) {
-        fclose(fp);
-        printf("Cannot read document.\n");
-        return 1;
-    }
-
-    file_len = ftell(fp);
-    if (file_len <= 0 || file_len > 2147483647L) {
-        fclose(fp);
-        printf("Cannot read document.\n");
-        return 1;
-    }
-
-    if (fseek(fp, 0, SEEK_SET) != 0) {
-        fclose(fp);
-        printf("Cannot read document.\n");
-        return 1;
-    }
-
-    content = (char *)malloc((size_t)file_len);
-    if (content == NULL) {
-        fclose(fp);
-        printf("Memory allocation failed\n");
-        return 1;
-    }
-
-    if (fread(content, 1, (size_t)file_len, fp) != (size_t)file_len) {
-        free(content);
-        fclose(fp);
-        printf("Cannot read document.\n");
-        return 1;
-    }
     fclose(fp);
 
     scan_db[*scan_amt].patient = &pat_db[index];
-    scan_db[*scan_amt].content = content;
-    scan_db[*scan_amt].len = (int)file_len;
+    scan_db[*scan_amt].content = buffer;
+    scan_db[*scan_amt].len = 0;
     *scan_amt = *scan_amt + 1;
 
     printf("Additional document attached.\n");
@@ -706,7 +686,7 @@ void FreeScanData(scan_t *scan_db, int scan_amt) {
     }
 
     for (i = 0; i < scan_amt; i++) {
-        free(scan_db[i].content);
+        /* free(scan_db[i].content); */
         scan_db[i].content = NULL;
         scan_db[i].len = 0;
         scan_db[i].patient = NULL;

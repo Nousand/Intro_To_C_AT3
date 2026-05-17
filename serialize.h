@@ -48,8 +48,8 @@
  * Output:
  *  <- int => length of written string
  *******************************************************************************/
-int serialize(char *dest, size_t dest_size, patient_t *pat_db, size_t pat_amt,
-              scan_t *scan_db, size_t scan_amt);
+long serialize(char *dest, size_t dest_size, patient_t *pat_db, size_t pat_amt,
+               scan_t *scan_db, size_t scan_amt);
 
 /*******************************************************************************
  * deserialize
@@ -70,8 +70,8 @@ int deserialize(char *src, patient_t *pat_db, size_t *pat_amt, scan_t *scan_db,
  * Function Implementations
  *******************************************************************************/
 
-int serialize(char *dest, size_t dest_size, patient_t *pat_db, size_t pat_amt,
-              scan_t *scan_db, size_t scan_amt) {
+long serialize(char *dest, size_t dest_size, patient_t *pat_db, size_t pat_amt,
+               scan_t *scan_db, size_t scan_amt) {
 
     size_t offset = 0;
 
@@ -121,7 +121,7 @@ int serialize(char *dest, size_t dest_size, patient_t *pat_db, size_t pat_amt,
         offset += (size_t)n;
     }
 
-    return SUCCESS;
+    return (long)offset;
 }
 
 int deserialize(char *src, patient_t *pat_db, size_t *pat_amt, scan_t *scan_db,

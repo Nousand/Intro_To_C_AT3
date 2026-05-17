@@ -17,6 +17,7 @@
 
 #define ERROR -1
 #define SUCCESS 0
+#define INITNAMESIZE 60
 #define NAMESIZE 120
 
 /*******************************************************************************
@@ -57,7 +58,7 @@ int to_rawimg(char *filepath, char *out_name) {
     char *slash = strrchr(filepath, '/');
     char *filename = slash ? slash + 1 : filepath;
     strcpy(out_name, filename);
-    char tname[NAMESIZE];
+    char tname[INITNAMESIZE];
     strcpy(tname, filename);
 
     /* Null terminates the '.' to strip trailing format */
@@ -90,7 +91,7 @@ int to_rawimg(char *filepath, char *out_name) {
 }
 
 int bin2origin(scan_t *scan_db, size_t scan_amt) {
-    char name[NAMESIZE];
+    char name[INITNAMESIZE];
     char nname[NAMESIZE];
     char pname[NAMESIZE];
     char *dot;
@@ -113,7 +114,9 @@ typedef enum {
     MODE_COMPRESS,
     MODE_DECOMPRESS,
     MODE_ENCRYPT,
-    MODE_DECRYPT
+    MODE_DECRYPT,
+    MODE_COMPRESS_ENCRYPT,
+    MODE_DECRYPT_DECOMPRESS,
 } process_mode_t;
 
 typedef struct {
@@ -194,6 +197,55 @@ int process_images(scan_t *scan_db, size_t scan_amt, image_processor_t *proc) {
                                            (int)file_len, proc->passphrase);
             result = result ? ERROR : file_len;
             break;
+        case MODE_COMPRESS_ENCRYPT: {
+            char *compressed = (char *)malloc(file_len * 2);
+            if (!compressed) {
+                free(buffer);
+                free(output);
+                continue;
+            }
+            int cmp_result = compress(compressed, buffer, file_len);
+            if (cmp_result < 0) {
+                free(compressed);
+                free(buffer);
+                free(output);
+                continue;
+            }
+            size_t cmp_bytes = (size_t)cmp_result * sizeof(uint16_t);
+            memcpy(output, compressed, cmp_bytes);
+            free(compressed);
+            result = EncryptWithPassphrase((unsigned char *)output,
+                                           (int)cmp_bytes, proc->passphrase);
+            result = result ? ERROR : (int)cmp_bytes;
+            break;
+        }
+        case MODE_DECRYPT_DECOMPRESS: {
+            memcpy(output, buffer, file_len);
+            result = DecryptWithPassphrase((unsigned char *)output,
+                                           (int)file_len, proc->passphrase);
+            if (result) {
+                free(buffer);
+                free(output);
+                continue;
+            }
+            /* decompress the decrypted data into a second buffer */
+            char *decompressed = (char *)malloc(file_len * 8);
+            if (!decompressed) {
+                free(buffer);
+                free(output);
+                continue;
+            }
+            result = decompress(decompressed, output, file_len);
+            if (result < 0) {
+                free(decompressed);
+                free(buffer);
+                free(output);
+                continue;
+            }
+            memcpy(output, decompressed, (size_t)result);
+            free(decompressed);
+            break;
+        }
         default:
             free(buffer);
             free(output);
@@ -227,7 +279,7 @@ int process_images(scan_t *scan_db, size_t scan_amt, image_processor_t *proc) {
     return SUCCESS;
 }
 
-int image_adapter(scan_t *scan_db, size_t scan_amt, process_mode_t mode) {
+int handle_images(scan_t *scan_db, size_t scan_amt, process_mode_t mode) {
     image_processor_t proc;
     proc.mode = mode;
     switch (mode) {
@@ -247,6 +299,16 @@ int image_adapter(scan_t *scan_db, size_t scan_amt, process_mode_t mode) {
         proc.out_scale = 1;
         break;
     case MODE_DECRYPT:
+        proc.in_ext = ".enc";
+        proc.out_ext = ".bin";
+        proc.out_scale = 1;
+        break;
+    case MODE_COMPRESS_ENCRYPT:
+        proc.in_ext = ".bin";
+        proc.out_ext = ".enc";
+        proc.out_scale = 1;
+        break;
+    case MODE_DECRYPT_DECOMPRESS:
         proc.in_ext = ".enc";
         proc.out_ext = ".bin";
         proc.out_scale = 1;

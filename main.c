@@ -4,10 +4,10 @@
  * 0. For windows and macos ensure gcc and make are installed
  * 1. In the command line cd into the directory
  * 2. run "make build" or "make" to compile the file
- * 
+ *
  * USAGE
  * execution: run "make run" (for platform agnosticism)
-*******************************************************************************/
+ *******************************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,7 +20,7 @@
 
 /*******************************************************************************
  * Function prototypes
-*******************************************************************************/
+ *******************************************************************************/
 void PrintMenu(void);
 void ClearInputBuffer(void);
 int ReadMenuChoice(void);
@@ -28,7 +28,7 @@ int ReadPatientNumber(void);
 
 /*******************************************************************************
  * Main
-*******************************************************************************/
+ *******************************************************************************/
 int main(void) {
     patient_t *patient_db;
     patient_t *loaded_db;
@@ -60,79 +60,80 @@ int main(void) {
         choice = ReadMenuChoice();
 
         switch (choice) {
-            case 1:
-                AddPatientData(patient_db, &patient_amt);
-                break;
+        case 1:
+            AddPatientData(patient_db, &patient_amt);
+            break;
 
-            case 2:
-                patient_number = ReadPatientNumber();
-                if (patient_number >= 1 && patient_number <= patient_amt) {
-                    RemovePatientDocuments(patient_db, scan_db, &scan_amt,
-                                           patient_number - 1);
-                }
-                DeletePatientData(patient_db, &patient_amt, patient_number - 1);
-                break;
+        case 2:
+            patient_number = ReadPatientNumber();
+            if (patient_number >= 1 && patient_number <= patient_amt) {
+                RemovePatientDocuments(patient_db, scan_db, &scan_amt,
+                                       patient_number - 1);
+            }
+            DeletePatientData(patient_db, &patient_amt, patient_number - 1);
+            break;
 
-            case 3:
-                ViewPatientData(patient_db, patient_amt, scan_db, scan_amt);
-                break;
+        case 3:
+            ViewPatientData(patient_db, patient_amt, scan_db, scan_amt);
+            break;
 
-            case 4:
-                SavePatientData(dbFileName, patient_db, patient_amt, scan_db,
-                                scan_amt);
-                break;
+        case 4:
+            SavePatientData(dbFileName, patient_db, patient_amt, scan_db,
+                            scan_amt);
+            break;
 
-            case 5:
-                loaded_db = NULL;
-                loaded_scan_db = NULL;
-                loaded_scan_amt = 0;
-                loaded_amt = LoadPatientData(dbFileName, &loaded_db,
-                                             &loaded_scan_db, &loaded_scan_amt);
+        case 5:
+            loaded_db = NULL;
+            loaded_scan_db = NULL;
+            loaded_scan_amt = 0;
+            loaded_amt = LoadPatientData(dbFileName, &loaded_db,
+                                         &loaded_scan_db, &loaded_scan_amt);
 
-                if (loaded_amt >= 0) {
-                    FreeScanData(scan_db, scan_amt);
-                    free(patient_db);
-                    free(scan_db);
-                    patient_db = loaded_db;
-                    scan_db = loaded_scan_db;
-                    patient_amt = loaded_amt;
-                    scan_amt = loaded_scan_amt;
-                }
-                break;
+            if (loaded_amt >= 0) {
+                FreeScanData(scan_db, scan_amt);
+                free(patient_db);
+                free(scan_db);
+                patient_db = loaded_db;
+                scan_db = loaded_scan_db;
+                patient_amt = loaded_amt;
+                scan_amt = loaded_scan_amt;
+            }
+            break;
 
-            case 6:
-                patient_number = ReadPatientNumber();
-                AttachAdditionalDocument(patient_db, patient_amt, scan_db,
-                                         &scan_amt,
-                                         patient_number - 1);
-                break;
+        case 6:
+            patient_number = ReadPatientNumber();
+            AttachAdditionalDocument(patient_db, patient_amt, scan_db,
+                                     &scan_amt, patient_number - 1);
+            break;
 
-            case 7:
+        case 7:
+            if (InterfaceCompressFileData(0) == 0)
                 printf("compressed data successful.\n");
-                break;
+            break;
 
-            case 8:
+        case 8:
+            if (InterfaceCompressFileData(1) == 0)
                 printf("Decompress data successful.\n");
-                break;
+            break;
 
-            case 9:
-                if (EncryptFileData() == 0) {
-                    printf("Encrypt data successful.\n");
-                }
-                break;
+        case 9:
+            if (EncryptFileData() == 0) {
+                printf("Encrypt data successful.\n");
+            }
+            break;
 
-            case 10:
-                if (DecryptFileData() == 0) {
-                    printf("Decrypt data successful.\n");
-                }
-                break;
+        case 10:
+            if (DecryptFileData() == 0) {
+                printf("Decrypt data successful.\n");
+            }
+            break;
 
-            case 11:
-                break;
+        case 11:
+            break;
 
-            default:
-                printf("Invalid choice.\n");
-                break;
+        default:
+            printf("Invalid choice.\n");
+            break;
         }
     } while (choice != 11);
 
@@ -145,7 +146,7 @@ int main(void) {
 /*******************************************************************************
  * PrintMenu
  * prints the command line menu for the patient database.
-*******************************************************************************/
+ *******************************************************************************/
 void PrintMenu(void) {
     printf("\nPatient Management System \n"
            "1. Add patient\n"
@@ -164,7 +165,7 @@ void PrintMenu(void) {
 /*******************************************************************************
  * ClearInputBuffer
  * removes extra characters from stdin after scanf.
-*******************************************************************************/
+ *******************************************************************************/
 void ClearInputBuffer(void) {
     int ch;
     while ((ch = getchar()) != '\n' && ch != EOF) {
@@ -174,7 +175,7 @@ void ClearInputBuffer(void) {
 /*******************************************************************************
  * ReadMenuChoice
  * reads and validates the menu choice.
-*******************************************************************************/
+ *******************************************************************************/
 int ReadMenuChoice(void) {
     int result;
     int choice;
@@ -201,7 +202,7 @@ int ReadMenuChoice(void) {
 /*******************************************************************************
  * ReadPatientNumber
  * reads the displayed patient number for deletion.
-*******************************************************************************/
+ *******************************************************************************/
 int ReadPatientNumber(void) {
     int result;
     int patient_number;

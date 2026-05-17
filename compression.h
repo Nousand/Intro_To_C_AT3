@@ -123,7 +123,7 @@ static void dict_free(dict_t *dict);
  * Output:
  *  <- int                => error code (-1) for failure, file size for success
  *******************************************************************************/
-int compress(char *dest, char *uncompressed);
+int compress(char *dest, char *uncompressed, size_t trglen);
 
 /*******************************************************************************
  * decompress
