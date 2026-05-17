@@ -57,6 +57,24 @@ int SavePatientData(char *filename, patient_t *pat_db, int pat_amt,
 int LoadPatientData(char *filename, patient_t **pat_db, scan_t **scan_db,
                     int *scan_amt);
 
+<<<<<<< HEAD
+=======
+/*******************************************************************************
+ * EncryptFileData
+ * asks for a file path and encrypts that file in place
+ * <- int => error code (0 : success, 1 : fail)
+*******************************************************************************/
+int EncryptFileData(void);
+
+/*******************************************************************************
+ * DecryptFileData
+ * asks for a file path and decrypts that file in place
+ * <- int => error code (0 : success, 1 : fail)
+*******************************************************************************/
+int DecryptFileData(void);
+
+
+>>>>>>> d61c025dec00d4a03adcc2d3407522ec99084f43
 /*******************************************************************************
  * AddPatientData
  * adds a new patient into the patient database
@@ -126,6 +144,7 @@ static int InterfaceIsLeapYear(int year);
 static int InterfaceDaysInMonth(int month, int year);
 static int InterfaceIsValidDate(date_t dob);
 static void InterfaceFormatDate(char destination[], int size, date_t dob);
+static int InterfaceCryptFileData(int decrypt);
 
 /*******************************************************************************
  * Helper function implementations
@@ -371,6 +390,117 @@ int LoadPatientData(char *filename, patient_t **pat_db, scan_t **scan_db,
     free(serialized);
     *scan_amt = (int)loaded_scan_amt;
     return (int)pat_amt;
+}
+
+/*******************************************************************************
+ * InterfaceCryptFileData
+ * asks for a file path, encrypts or decrypts its bytes, and writes it back.
+*******************************************************************************/
+static int InterfaceCryptFileData(int decrypt) {
+    char filename[INTERFACE_INPUT_SIZE];
+    FILE *fp;
+    long file_len;
+    char *content;
+    scan_t scan;
+    int result;
+
+    printf("File path: >");
+    InterfaceReadLine(filename, INTERFACE_INPUT_SIZE);
+
+    if (filename[0] == '\0') {
+        printf("File error\n");
+        return 1;
+    }
+
+    fp = fopen(filename, "rb");
+    if (fp == NULL) {
+        printf("Cannot open file.\n");
+        return 1;
+    }
+
+    if (fseek(fp, 0, SEEK_END) != 0) {
+        fclose(fp);
+        printf("Cannot read file.\n");
+        return 1;
+    }
+
+    file_len = ftell(fp);
+    if (file_len <= 0 || file_len > 2147483647L) {
+        fclose(fp);
+        printf("Cannot read file.\n");
+        return 1;
+    }
+
+    if (fseek(fp, 0, SEEK_SET) != 0) {
+        fclose(fp);
+        printf("Cannot read file.\n");
+        return 1;
+    }
+
+    content = (char *)malloc((size_t)file_len);
+    if (content == NULL) {
+        fclose(fp);
+        printf("Memory allocation failed\n");
+        return 1;
+    }
+
+    if (fread(content, 1, (size_t)file_len, fp) != (size_t)file_len) {
+        free(content);
+        fclose(fp);
+        printf("Cannot read file.\n");
+        return 1;
+    }
+    fclose(fp);
+
+    scan.patient = NULL;
+    scan.content = content;
+    scan.len = (int)file_len;
+
+    if (decrypt) {
+        result = DecryptScan(&scan, INTERFACE_PASSPHRASE);
+    } else {
+        result = EncryptScan(&scan, INTERFACE_PASSPHRASE);
+    }
+
+    if (result != 0) {
+        free(content);
+        printf("File error\n");
+        return 1;
+    }
+
+    fp = fopen(filename, "wb");
+    if (fp == NULL) {
+        free(content);
+        printf("Cannot open file.\n");
+        return 1;
+    }
+
+    if (fwrite(content, 1, (size_t)file_len, fp) != (size_t)file_len) {
+        free(content);
+        fclose(fp);
+        printf("Cannot write file.\n");
+        return 1;
+    }
+
+    free(content);
+    fclose(fp);
+    return 0;
+}
+
+/*******************************************************************************
+ * EncryptFileData
+ * asks for a file path and encrypts that file in place.
+*******************************************************************************/
+int EncryptFileData(void) {
+    return InterfaceCryptFileData(0);
+}
+
+/*******************************************************************************
+ * DecryptFileData
+ * asks for a file path and decrypts that file in place.
+*******************************************************************************/
+int DecryptFileData(void) {
+    return InterfaceCryptFileData(1);
 }
 
 /*******************************************************************************
