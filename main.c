@@ -116,11 +116,15 @@ int main(void) {
                 break;
 
             case 9:
-                printf("Encrypt data successful.\n");
+                if (EncryptFileData() == 0) {
+                    printf("Encrypt data successful.\n");
+                }
                 break;
 
             case 10:
-                printf("Decrypt data successful.\n");
+                if (DecryptFileData() == 0) {
+                    printf("Decrypt data successful.\n");
+                }
                 break;
 
             case 11:
