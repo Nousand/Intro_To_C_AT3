@@ -1,6 +1,6 @@
 /*******************************************************************************
  * Title: compression.h
- * Author:
+ * Author: Rentaro Beattie
  * Description:
  * This file contains the compression functionality implementation
  * Compresses a file and outputs that compresed file, nothing else
@@ -119,10 +119,11 @@ static void dict_free(dict_t *dict);
  * Input:
  *  -> char* dest         => the destination buffer of the compressed data
  *  -> char* uncompressed => the input buffer (null-terminated) to compress
+ *  -> size_t trglen      => size of the input buffer
  * Output:
- *  <- int                => error code for success (0 : success, -1 : fail)
+ *  <- int                => error code (-1) for failure, file size for success
  *******************************************************************************/
-int compress(char *dest, char *uncompressed);
+int compress(char *dest, char *uncompressed, size_t trglen);
 
 /*******************************************************************************
  * decompress
@@ -216,7 +217,7 @@ static void dict_free(dict_t *dict) {
     free(dict);
 }
 
-int compress(char *dest, char *uncompressed) {
+int compress(char *dest, char *uncompressed, size_t trglen) {
     dict_t *dict = dict_new(256);
     if (!dict)
         return ERROR;
@@ -232,7 +233,7 @@ int compress(char *dest, char *uncompressed) {
     /* results are stored in size_t to ensure size compatibility with the
      * dictionary array.
      * This will later be converted to uint16_t for better compression */
-    size_t trglen = strlen(uncompressed);
+    /* size_t trglen = strlen(uncompressed); */
     size_t *result = (size_t *)malloc(trglen * sizeof(size_t));
     if (!result) {
         dict_free(dict);
@@ -296,7 +297,7 @@ int compress(char *dest, char *uncompressed) {
 
     free(result);
     dict_free(dict);
-    return SUCCESS;
+    return (int)reslen;
 }
 
 int decompress(char *dest, char *compressed, size_t compressedlen) {

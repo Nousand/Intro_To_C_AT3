@@ -1,3 +1,9 @@
+# Data files
+*.db
+*.bin
+*.enc
+*.cmp
+
 # Prerequisites
 *.d
 
