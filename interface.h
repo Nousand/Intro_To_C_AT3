@@ -289,7 +289,7 @@ int SavePatientData(char *filename, patient_t *pat_db, int pat_amt,
         return 1;
     }
 
-    if (handle_images(scan_db, scan_amt, MODE_COMPRESS_ENCRYPT) < SUCCESS) {
+    if (handle_images(scan_db, scan_amt, MODE_COMPRESS_ENCRYPT, "") < SUCCESS) {
         free(compressed);
         printf("Save error\n");
         return 1;
@@ -389,7 +389,7 @@ int LoadPatientData(char *filename, patient_t **pat_db, scan_t **scan_db,
         return -1;
     }
 
-    if (handle_images(*scan_db, loaded_scan_amt, MODE_DECRYPT_DECOMPRESS) <
+    if (handle_images(*scan_db, loaded_scan_amt, MODE_DECRYPT_DECOMPRESS, "") <
         SUCCESS) {
         free(compressed);
         free(serialized);
@@ -428,7 +428,7 @@ static int InterfaceCompressFileData(int decompress) {
     scan.len = 0;
     scan.content = filename;
     if (decompress) {
-        if (handle_images(&scan, 1, MODE_DECOMPRESS) < SUCCESS) {
+        if (handle_images(&scan, 1, MODE_DECOMPRESS, "") < SUCCESS) {
             printf("Cannot Decompress File.\n");
             return 1;
         }
@@ -444,7 +444,7 @@ static int InterfaceCompressFileData(int decompress) {
             return 1;
         }
         scan.content = output;
-        if (handle_images(&scan, 1, MODE_COMPRESS) < SUCCESS) {
+        if (handle_images(&scan, 1, MODE_COMPRESS, "") < SUCCESS) {
             printf("Cannot Compress File.\n");
             return 1;
         }
@@ -461,9 +461,18 @@ static int InterfaceCompressFileData(int decompress) {
 static int InterfaceCryptFileData(int decrypt) {
     char filename[INTERFACE_INPUT_SIZE];
     scan_t scan;
+    char passphrase[120];
 
     printf("File path: >");
     InterfaceReadLine(filename, INTERFACE_INPUT_SIZE);
+
+    if (filename[0] == '\0') {
+        printf("File error\n");
+        return 1;
+    }
+
+    printf("passphrase: >");
+    InterfaceReadLine(passphrase, INTERFACE_INPUT_SIZE);
 
     if (filename[0] == '\0') {
         printf("File error\n");
@@ -474,7 +483,7 @@ static int InterfaceCryptFileData(int decrypt) {
     scan.len = 0;
     scan.content = filename;
     if (decrypt) {
-        if (handle_images(&scan, 1, MODE_DECRYPT) < SUCCESS) {
+        if (handle_images(&scan, 1, MODE_DECRYPT, passphrase) < SUCCESS) {
             printf("Cannot Decrypt File.\n");
             return 1;
         }
@@ -489,7 +498,9 @@ static int InterfaceCryptFileData(int decrypt) {
             printf("Cannot Encrypt File.\n");
             return 1;
         }
-        if (handle_images(&scan, 1, MODE_ENCRYPT) < SUCCESS) {
+        printf("DEBUG content: '%s'\n", output);
+        scan.content = output;
+        if (handle_images(&scan, 1, MODE_ENCRYPT, passphrase) < SUCCESS) {
             printf("Cannot Encrypt File.\n");
             return 1;
         }
@@ -637,8 +648,9 @@ int AttachAdditionalDocument(patient_t *pat_db, int pat_amt, scan_t *scan_db,
     }
     fclose(fp);
 
+    char *content = strdup(buffer);
     scan_db[*scan_amt].patient = &pat_db[index];
-    scan_db[*scan_amt].content = buffer;
+    scan_db[*scan_amt].content = content;
     scan_db[*scan_amt].len = 0;
     *scan_amt = *scan_amt + 1;
 
@@ -687,7 +699,7 @@ void FreeScanData(scan_t *scan_db, int scan_amt) {
     }
 
     for (i = 0; i < scan_amt; i++) {
-        /* free(scan_db[i].content); */
+        free(scan_db[i].content);
         scan_db[i].content = NULL;
         scan_db[i].len = 0;
         scan_db[i].patient = NULL;
